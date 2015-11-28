@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="unit test">
+      <UniqueIdentifier>{cd79f1bd-f609-40b3-a01a-5cb5daa175d3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="record.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="targetver.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RPCNetwork.h">
+      <Filter>unit test</Filter>
+    </ClInclude>
+    <ClInclude Include="test_constants.h">
+      <Filter>unit test</Filter>
+    </ClInclude>
+    <ClInclude Include="test_types.h">
+      <Filter>unit test</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main_console.cpp" />
+    <ClCompile Include="RPCNetwork.cpp">
+      <Filter>unit test</Filter>
+    </ClCompile>
+    <ClCompile Include="RPCNetwork_server.skeleton.cpp">
+      <Filter>unit test</Filter>
+    </ClCompile>
+    <ClCompile Include="test_constants.cpp">
+      <Filter>unit test</Filter>
+    </ClCompile>
+    <ClCompile Include="test_types.cpp">
+      <Filter>unit test</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
