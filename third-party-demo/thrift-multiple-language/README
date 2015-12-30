@@ -1,0 +1,35 @@
+nodejs、java、python、ruby通过thrift 进行互相通讯
+
+.nodejs
+需要修改protocal源码支持中文UTF-8传输
+参考：http://www.programup.com/article/98.html
+ 
+
+.java
+maven项目
+
+.python
+
+( 安装 egg
+thrift-0.8.0\lib\py>python setup.py build
+thrift-0.8.0\lib\py>python setup.py install
+)
+
+thrift.exe -out thrift-pylab --gen py user.thrift
+
+.ruby
+
+( 安装 gem
+thrift-0.8.0\lib\rb
+gem build thrift.gemspec
+gem install thrift     // 不支持cygwin下的ruby
+)
+
+thrift.exe -out thrift-rblab\lib --gen rb user.thrift
+
+注意ruby 的server版本无法使用ctrl + c 强制退出
+transport = Thrift::ServerSocket.new('localhost', 9090)
+如果不加localhost，默认会监听在ipv6的地址端口
+
+需要修改protocal源码支持中文UTF-8传输
+参考：https://issues.apache.org/jira/browse/THRIFT-1224
