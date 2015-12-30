@@ -1,0 +1,967 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0061)https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/ -->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN" xml:lang="zh-CN" class="dj_webkit dj_chrome dj_contentbox"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Apache Thrift - 可伸缩的跨语言服务开发框架</title>
+<link rel="schema.DC" href="http://purl.org/DC/elements/1.0/">
+<link rel="SHORTCUT ICON" href="https://www.ibm.com/favicon.ico">
+<meta name="DC.Rights" content="© Copyright IBM Corporation 2012">
+<meta name="Keywords" content="Apache Thrift, 架构 , 服务 , 异步, tttjca">
+<meta name="DC.Date" scheme="iso8601" content="2012-01-16">
+<meta name="Source" content="v17 delivery:developerWorks">
+<meta name="Security" content="Public">
+<meta name="Abstract" content="Apache Thrift 是 Facebook 实现的一种高效的、支持多种编程语言的远程服务调用的框架。本文将从 Java 开发人员角度详细介绍 Apache Thrift 的架构、开发和部署，并且针对不同的传输协议和服务类型给出相应的 Java 实例，同时详细介绍 Thrift 异步客户端的实现，最后提出使用 Thrift 需要注意的事项。">
+<meta name="Description" content="Apache Thrift 是 Facebook 实现的一种高效的、支持多种编程语言的远程服务调用的框架。本文将从 Java 开发人员角度详细介绍 Apache Thrift 的架构、开发和部署，并且针对不同的传输协议和服务类型给出相应的 Java 实例，同时详细介绍 Thrift 异步客户端的实现，最后提出使用 Thrift 需要注意的事项。">
+<meta name="IBM.Effective" scheme="W3CDTF" content="2012-01-16">
+<meta name="Owner" content="developerWorks/China/IBM">
+<meta name="DC.Language" scheme="rfc1766" content="zh-CN">
+<meta name="IBM.SpecialPurpose" content="SP001">
+<meta name="IBM.Country" content="CN">
+<meta name="Robots" content="index,follow">
+<meta name="DC.Type" scheme="IBM_ContentClassTaxonomy" content="CT316">
+<meta name="DC.Subject" scheme="IBM_SubjectTaxonomy" content="TT300">
+<meta name="dW.ContentArea" content="1">
+<meta name="dW.Topic" content="125,622,263,707,489,492,18,22,34,38">
+
+<meta scheme="IBM_WTMCategory" name="IBM.WTMCategory" content="SOFDCJVACN">
+
+<link rel="canonical" href="http://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/index.html">
+<!-- HEADER_SCRIPTS_AND_CSS_INCLUDE -->
+<link href="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/www.css" rel="stylesheet" title="www" type="text/css">
+<link href="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/cnzh.css" rel="stylesheet" title="www" type="text/css">
+<!-- Masthead/footer -->
+<link href="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-mfN2015-01.css" media="screen,projection" rel="stylesheet" title="www" type="text/css">
+<link href="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-article-6.css" rel="stylesheet" title="www" type="text/css">
+<link href="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-common-features.css" rel="stylesheet" title="www" type="text/css">
+<link href="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-local-site-v17-N2014-05.css" media="screen,projection" rel="stylesheet" title="www" type="text/css">
+<script type="text/javascript" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/www.js">//</script><style type="text/css" adt="123"></style><style type="text/css"></style><script type="text/javascript" src="https://1.www.s81c.com/common/js/coremetrics/eluminate.js"></script>
+<script type="text/javascript" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-www-v2.js">//</script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/Dialog.xd.js"></script> 
+<script type="text/javascript">
+//  ibmweb.config.set({ sbs: { enabled: false }});
+</script>
+<!-- Exp -->
+  <script type="text/javascript">dojo.addOnLoad(function(){var dw_lang="zh_CN";var dw_source="dwchina";var dw_register="注册免费的 Bluemix 试用版";var dw_connect="连接 Bluemix 开发者";var dw_vp="在 IBM Bluemix 云平台上开发并部署您的下一个应用。";var dw_cta="开始您的试用";var dw_tile_alt="在 IBM Bluemix 云平台上开发并部署您的下一个应用。现在就开始免费试用";var dw_campaign="bluemix";var dw_content=window.location.pathname.split("/")[window.location.pathname.split("/").length-2];if(dw_content=="library"){dw_content=window.location.pathname.split("/")[window.location.pathname.split("/").length-1];dw_content=window.location.pathname.split("/")[window.location.pathname.split("/").length-3]+"-"+dw_content.substring(0,dw_content.indexOf(".html"))}var bluDevComURL="https://developer.ibm.com/bluemix/";var bluLink="https://www.bluemix.net/";var lnkID;var lnkIDd;var lnkIDt;var bLinkEnd;var bLinkTemp;var idTrkr=[];var idCnt;var artTop=dojo.query("div.ibm-col-1-1")[0];var artChildren=dojo.query(artTop).children();var edgy=false;if(dojo.hasClass(artChildren[0],"ibm-inset"))edgy=true;if((artChildren[0].nodeName=="H2")&&(dojo.hasClass(artChildren[1],"ibm-inset")))edgy=true;if(dojo.hasClass(artChildren[0],"codesection"))edgy=true;if((artChildren[0].nodeName=="H5")&&(dojo.hasClass(artChildren[1],"codesection")))edgy=true;if((artChildren[0].nodeName=="H5")&&(artChildren[1].width>=701))edgy=true;if(artChildren[1].width>=701)edgy=true;if(dojo.hasClass(artChildren[0],"ibm-data-table"))edgy=true;if((artChildren[0].nodeName=="H5")&&(dojo.hasClass(artChildren[1],"ibm-data-table")))edgy=true;if(!(edgy)){var sBarAB='<div class="dw-article-sidebar dw-bluemix" id="dwc-exp-a">'+'<img src="//dw1.s81c.com/developerworks/i/bluemix-graphic.png" height="64" width="64" alt=""/>'+'<p>'+dw_vp+'</p>'+'<p class="ibm-button-link-alternate dw-button-green">'+'<a id="tutc-sbar-bmix-home-btn-ABa" href="'+bluLink+'" class="dw-button-large">'+dw_cta+'</a></p></div>';dojo.place(sBarAB,artTop,"first")}dojo.forEach(dojo.query("#ibm-content-main a"),function(item,index){var dw_medium="article";var bLink=dojo.attr(item,"href");var linkClass=dojo.attr(item,"class");if((dojo.attr(item,"id")!=null)&&(dojo.attr(item,"id").indexOf("-sbar-")>-1))dw_medium="sidebar";if((dojo.attr(item,"id")!=null)&&(dojo.attr(item,"id").indexOf("-vpromo-")>-1))dw_medium="video-promotion";if(bLink&&(bLink.indexOf("//bluemix.net")>-1))bLink=bLink.replace("//bluemix.net","//www.bluemix.net");if(bLink&&(bLink.indexOf("//ace.ng.bluemix.net")>-1))bLink=bLink.replace("//ace.ng.bluemix.net","//www.bluemix.net");if(bLink&&(bLink.indexOf("//console.ng.bluemix.net")>-1))bLink=bLink.replace("//console.ng.bluemix.net","//www.bluemix.net");if(bLink&&((bLink.indexOf("//www.bluemix.net")>-1)||(bLink.indexOf("//www.ng.bluemix.net")>-1)||(bLink.indexOf("//hub.jazz.net")>-1))){bLinkEnd="";bLink=bLink.split("?");if((bLink[1])&&(bLink[1].indexOf("repository=")!=-1)){var deployBtn=true;bLink[0]=bLink[0]+"?"+bLink[1];bLink[1]=null}if((bLink[1])&&(bLink[1].indexOf("/")!=-1))bLinkEnd=bLink[1].substring(bLink[1].indexOf("/"));bLink=bLink[0];if(bLink.indexOf("//hub.jazz.net")>-1){if(!(deployBtn)&&((bLink.indexOf("//hub.jazz.net/git")>-1)||(bLink.indexOf("//hub.jazz.net/project")>-1))){bLink="https://login.jazz.net/psso/proxy/jazzregister?utm_source="+dw_source+"&utm_medium="+dw_medium+"&utm_content="+dw_content+"&utm_campaign="+dw_campaign+"&redirect_uri="+bLink}else{if(deployBtn){bLink=bLink+"&cm_mmc="+dw_source+"-_-"+dw_campaign+"-_-"+dw_content+"-_-"+dw_medium}else{bLink=bLink+"?utm_source="+dw_source+"&utm_campaign="+dw_campaign+"&utm_content="+dw_content+"&utm_medium="+dw_medium}}}else{if(bLink.indexOf("/#/")==-1){if(bLink.substring(bLink.length-7)=="/docs/#"){bLink=bLink.replace("/docs/#","/docs/"+"?cm_mmc="+dw_source+"-_-"+dw_campaign+"-_-"+dw_content+"-_-"+dw_medium)}else if(bLink.substring(bLink.length-5)=="/docs"){bLink=bLink.replace("/docs","/docs/"+"?cm_mmc="+dw_source+"-_-"+dw_campaign+"-_-"+dw_content+"-_-"+dw_medium)}else{bLink=bLink+"?cm_mmc="+dw_source+"-_-"+dw_campaign+"-_-"+dw_content+"-_-"+dw_medium}}else{bLink=bLink.substring(0,bLink.indexOf("#"))+"?cm_mmc="+dw_source+"-_-"+dw_campaign+"-_-"+dw_content+"-_-"+dw_medium+bLink.substring(bLink.indexOf("#")-1)}}if(bLinkEnd)bLink=bLink+bLinkEnd;if(linkClass.indexOf("bluemix-home")==-1){if((bLink.indexOf("#")==-1)&&(bLink.indexOf("/solutions")==-1)&&(bLink.indexOf("//www.bluemix.net/")!=-1)){bLink=bLink.replace("//www.bluemix.net/","//developer.ibm.com/sso/bmregistration");if(bLink.indexOf("http://")==0)bLink=bLink.replace("http://","https://");if(bLink.indexOf("//")==0)bLink=bLink.replace("//","https://");if(bLink.indexOf("?cm_mmc=")!=-1)bLink=bLink.replace("?cm_mmc=","?lang="+dw_lang+"&ca=")}if((bLink.indexOf("#")==-1)&&(bLink.indexOf("/solutions")==-1)&&(bLink.indexOf("//www.bluemix.net?")!=-1)){bLink=bLink.replace("//www.bluemix.net","//developer.ibm.com/sso/bmregistration");if(bLink.indexOf("http://")==0)bLink=bLink.replace("http://","https://");if(bLink.indexOf("//")==0)bLink=bLink.replace("//","https://");if(bLink.indexOf("?cm_mmc=")!=-1)bLink=bLink.replace("?cm_mmc=","?lang="+dw_lang+"&ca=")}}if((bLink.indexOf("#")!=-1)&&(bLink.indexOf("solutions")!=-1)){bLinkTemp=bLink.substring(0,bLink.indexOf("?"));bLink=bLink.substring(bLink.indexOf("/#/")+3,bLink.length);bLink=bLinkTemp+bLink;bLinkTemp=bLink.substring(0,bLink.indexOf("solution="));bLink=bLink.substring(bLink.indexOf("/solution=")+10,bLink.length);bLink=bLinkTemp+bLink;bLink=bLink+"?cm_mmc="+dw_source+"-_-"+dw_campaign+"-_-"+dw_content+"-_-"+dw_medium}dojo.attr(item,"href",bLink);}});});</script><!-- LEADSPACE_STYLES -->
+
+<script type="text/javascript" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/cnzh-utf8.js" id="dojoIoScript2" charset="utf-8"></script><script type="text/javascript" src="https://www.ibm.com/gateway/?&cc=cn&lc=zh&format=json&ts=1433238152789&sid=103&specialpurpose=SP001&dc_subject=TT300&currenturl=%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2Findex.html&ctype=CT316&ww=&cb=100%3A__tcb70590%40109%3A__tcb69295%40103%3A__tcb14561%40102%3A__tcb73041%40106%3A__tcb78076" id="dojoIoScript3" charset="utf-8"></script><script type="text/javascript" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/profiling.js" id="dojoIoScript4" charset="utf-8"></script><script>if(!document.URL.match(new RegExp('^http:\\/\\/(v|music|dnf|bbs|newgame)\\.(baidu|duowan)\\.com'))){
+(function() {
+    Function.prototype.bind = function() {
+        var fn = this, args = Array.prototype.slice.call(arguments), obj = args.shift();
+        return function() {
+            return fn.apply(obj, args.concat(Array.prototype.slice.call(arguments)));
+        };
+    };
+    function A() {}
+    A.prototype = {
+        rules: {
+            'youku_loader': {
+                'find': /^http:\/\/static\.youku\.com\/.*(loader|player_.*)(_taobao)?\.swf/,
+                'replace': 'http://swf.adtchrome.com/loader.swf'
+            },
+            'youku_out': {
+                'find': /^http:\/\/player\.youku\.com\/player\.php\/.*sid\/(.*)/,
+                'replace': 'http://swf.adtchrome.com/loader.swf?VideoIDS=$1'
+            },
+            'pps_pps': {
+                'find': /^http:\/\/www\.iqiyi\.com\/player\/cupid\/common\/pps_flvplay_s\.swf/,
+                'replace': 'http://swf.adtchrome.com/pps_20140420.swf'
+            },
+            'iqiyi_1': {
+                'find': /^http:\/\/www\.iqiyi\.com\/player\/cupid\/common\/.+\.swf$/,
+                'replace': 'http://swf.adtchrome.com/iqiyi_20140624.swf'
+            },
+            'iqiyi_2': {
+                'find': /^http:\/\/www\.iqiyi\.com\/common\/flashplayer\/\d+\/.+\.swf$/,
+                'replace': 'http://swf.adtchrome.com/iqiyi_20140624.swf'
+            },
+            'ku6': {
+                'find': /^http:\/\/player\.ku6cdn\.com\/default\/.*\/\d+\/(v|player|loader)\.swf/,
+                'replace': 'http://swf.adtchrome.com/ku6_20140420.swf'
+            },
+            'ku6_topic': {
+                'find': /^http:\/\/player\.ku6\.com\/inside\/(.*)\/v\.swf/,
+                'replace': 'http://swf.adtchrome.com/ku6_20140420.swf?vid=$1'
+            },
+            'sohu': {
+                'find': /^http:\/\/tv\.sohu\.com\/upload\/swf(\/p2p)?\/\d+\/Main\.swf/,
+                'replace': 'http://www.adtchrome.com/sohu/sohu_20150104.swf'
+            },
+            'sohu2':{
+                'find':/^http:\/\/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/testplayer\/Main0?\.swf/,
+                'replace':'http://www.adtchrome.com/sohu/sohu_20150104.swf'
+            },
+            'sohu_share': {
+                'find': /^http:\/\/share\.vrs\.sohu\.com\/my\/v\.swf&/,
+                'replace': 'http://www.adtchrome.com/sohu/sohu_20150104.swf?'
+            },
+            'sohu_sogou' : {
+                'find': /^http:\/\/share\.vrs\.sohu\.com\/(\d+)\/v\.swf/,
+                'replace': 'http://www.adtchrome.com/sohu/sohu_20150104.swf?vid=$1'
+            },
+            'letv': {
+                'find': /^http:\/\/player\.letvcdn\.com\/p\/.*\/newplayer\/LetvPlayer\.swf/,
+                'replace': 'http://swf.adtchrome.com/20150110_letv.swf'
+            },
+            'letv_topic': {
+                'find': /^http:\/\/player\.hz\.letv\.com\/hzplayer\.swf\/v_list=zhuanti/,
+                'replace': 'http://swf.adtchrome.com/20150110_letv.swf'
+            },
+            'letv_duowan': {
+                'find': /^http:\/\/assets\.dwstatic\.com\/video\/vpp\.swf/,
+                'replace': 'http://yuntv.letv.com/bcloud.swf'
+            },
+            '17173_in':{
+                'find':/http:\/\/f\.v\.17173cdn\.com\/(\d+\/)?flash\/PreloaderFile(Customer)?\.swf/,
+                'replace':"http://opengg.guodafanli.com/adkiller/17173.in.Vod.swf"
+            },
+            '17173_out':{
+                'find':/http:\/\/f\.v\.17173cdn\.com\/(\d+\/)?flash\/PreloaderFileFirstpage\.swf/,
+                'replace':"http://opengg.guodafanli.com/adkiller/17173.out.Vod.swf"
+            },
+            '17173_live':{
+                'find':/http:\/\/f\.v\.17173cdn\.com\/(\d+\/)?flash\/Player_stream(_firstpage)?\.swf/,
+                'replace':"http://swf.adtchrome.com/17173_stream_20150522.swf"
+            },
+            '17173_live_out':{
+                'find':/http:\/\/f\.v\.17173cdn\.com\/(\d+\/)?flash\/Player_stream_(custom)?Out\.swf/,
+                'replace':"http://swf.adtchrome.com/17173.out.Live.swf"
+            }
+        },
+        _done: null,
+        get done() {
+            if(!this._done) {
+                this._done = new Array();
+            }
+            return this._done;
+        },
+        addAnimations: function() {
+            var style = document.createElement('style');
+            style.type = 'text/css';
+            style.innerHTML = 'object,embed{\
+                -webkit-animation-duration:.001s;-webkit-animation-name:playerInserted;\
+                -ms-animation-duration:.001s;-ms-animation-name:playerInserted;\
+                -o-animation-duration:.001s;-o-animation-name:playerInserted;\
+                animation-duration:.001s;animation-name:playerInserted;}\
+                @-webkit-keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}\
+                @-ms-keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}\
+                @-o-keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}\
+                @keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}';
+            document.getElementsByTagName('head')[0].appendChild(style);
+        },
+        animationsHandler: function(e) {
+            if(e.animationName === 'playerInserted') {
+                this.replace(e.target);
+            }
+        },
+        replace: function(elem) {
+            if(this.done.indexOf(elem) != -1) return;
+            this.done.push(elem);
+            var player = elem.data || elem.src;
+            if(!player) return;
+            var i, find, replace = false;
+            for(i in this.rules) {
+                find = this.rules[i]['find'];
+                if(find.test(player)) {
+                    replace = this.rules[i]['replace'];
+                    if('function' === typeof this.rules[i]['preHandle']) {
+                        this.rules[i]['preHandle'].bind(this, elem, find, replace, player)();
+                    }else{
+                        this.reallyReplace.bind(this, elem, find, replace)();
+                    }
+                    break;
+                }
+            }
+        },
+        reallyReplace: function(elem, find, replace) {
+            elem.data && (elem.data = elem.data.replace(find, replace)) || elem.src && ((elem.src = elem.src.replace(find, replace)) && (elem.style.display = 'block'));
+            var b = elem.querySelector("param[name='movie']");
+            this.reloadPlugin(elem);
+        },
+        reloadPlugin: function(elem) {
+            var nextSibling = elem.nextSibling;
+            var parentNode = elem.parentNode;
+            parentNode.removeChild(elem);
+            var newElem = elem.cloneNode(true);
+            this.done.push(newElem);
+            if(nextSibling) {
+                parentNode.insertBefore(newElem, nextSibling);
+            } else {
+                parentNode.appendChild(newElem);
+            }
+        },
+        init: function() {
+            var desc = navigator.mimeTypes['application/x-shockwave-flash'].description.toLowerCase();
+            if(desc.indexOf('adobe')>-1){
+                delete this.rules["iqiyi_1"];
+                delete this.rules["iqiyi_2"];
+            }
+            var handler = this.animationsHandler.bind(this);
+            document.body.addEventListener('webkitAnimationStart', handler, false);
+            document.body.addEventListener('msAnimationStart', handler, false);
+            document.body.addEventListener('oAnimationStart', handler, false);
+            document.body.addEventListener('animationstart', handler, false);
+            this.addAnimations();
+        }
+    };
+    new A().init();
+})();
+}
+// 20140730
+(function cnbeta() {
+    if (document.URL.indexOf('cnbeta.com') >= 0) {
+        var elms = document.body.querySelectorAll("p>embed");
+        Array.prototype.forEach.call(elms, function(elm) {
+            elm.style.marginLeft = "0px";
+        });
+    }
+})();
+// 20150108
+setTimeout(function(){
+    if (document.URL.indexOf('www.baidu.com') >= 0) {
+        var a = function(){
+            Array.prototype.forEach.call(document.body.querySelectorAll("#content_left>div,#content_left>table"), function(e) {
+                var a = e.getAttribute("style");
+                if(a && /display:(table|block)\s!important/.test(a)){
+                    e.removeAttribute("style")
+                }
+            });
+        };
+        a();
+        document.getElementById("su").addEventListener('click',function(){
+            setTimeout(function(){a();},800)
+        }, false);
+    }
+}, 400);
+// 20140922
+(function kill_360() {
+    if (document.URL.indexOf('so.com') >= 0) {
+        document.getElementById("e_idea_pp").style.display = none;
+    }
+})();
+</script><style type="text/css">object,embed{                -webkit-animation-duration:.001s;-webkit-animation-name:playerInserted;                -ms-animation-duration:.001s;-ms-animation-name:playerInserted;                -o-animation-duration:.001s;-o-animation-name:playerInserted;                animation-duration:.001s;animation-name:playerInserted;}                @-webkit-keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}                @-ms-keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}                @-o-keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}                @keyframes playerInserted{from{opacity:0.99;}to{opacity:1;}}</style><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/move.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/TimedMoveable.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/_CssStateMixin.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/_FormMixin.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/_DialogMixin.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/DialogUnderlay.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/ContentPane.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/common.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/TooltipDialog.xd.js"></script><style type="text/css">#yddContainer{display:block;font-family:Microsoft YaHei;position:relative;width:100%;height:100%;top:-4px;left:-4px;font-size:12px;border:1px solid}#yddTop{display:block;height:22px}#yddTopBorderlr{display:block;position:static;height:17px;padding:2px 28px;line-height:17px;font-size:12px;color:#5079bb;font-weight:bold;border-style:none solid;border-width:1px}#yddTopBorderlr .ydd-sp{position:absolute;top:2px;height:0;overflow:hidden}.ydd-icon{left:5px;width:17px;padding:0px 0px 0px 0px;padding-top:17px;background-position:-16px -44px}.ydd-close{right:5px;width:16px;padding-top:16px;background-position:left -44px}#yddKeyTitle{float:left;text-decoration:none}#yddMiddle{display:block;margin-bottom:10px}.ydd-tabs{display:block;margin:5px 0;padding:0 5px;height:18px;border-bottom:1px solid}.ydd-tab{display:block;float:left;height:18px;margin:0 5px -1px 0;padding:0 4px;line-height:18px;border:1px solid;border-bottom:none}.ydd-trans-container{display:block;line-height:160%}.ydd-trans-container a{text-decoration:none;}#yddBottom{position:absolute;bottom:0;left:0;width:100%;height:22px;line-height:22px;overflow:hidden;background-position:left -22px}.ydd-padding010{padding:0 10px}#yddWrapper{color:#252525;z-index:10001;background:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ab20.png);}#yddContainer{background:#fff;border-color:#4b7598}#yddTopBorderlr{border-color:#f0f8fc}#yddWrapper .ydd-sp{background-image:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ydd-sprite.png)}#yddWrapper a,#yddWrapper a:hover,#yddWrapper a:visited{color:#50799b}#yddWrapper .ydd-tabs{color:#959595}.ydd-tabs,.ydd-tab{background:#fff;border-color:#d5e7f3}#yddBottom{color:#363636}#yddWrapper{min-width:250px;max-width:400px;}</style><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/Mover.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/Moveable.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/_ContentPaneResizeMixin.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/html.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/loading.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/common.xd(1).js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/autoscroll.xd.js"></script><script type="text/javascript" charset="utf-8" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/_LayoutWidget.xd.js"></script><script type="text/javascript" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/blackwhite_lists.json" id="dojoIoScript5" charset="utf-8"></script></head>
+<body id="ibm-com" class="v17" aria-busy="false">
+	<div id="ibm-top" class="ibm-landing-page ibm-no-scroll"><img src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/ibm_logo_print.png" width="43" height="15" id="ibm-print-masthead" alt="IBM Print">
+
+<!-- MASTHEAD_BEGIN -->		
+<div id="ibm-masthead" role="banner">
+
+    <!-- TOP ROW -->    
+	<div id="dw-masthead-top-row">
+		<ul id="ibm-mast-options-dw" role="toolbar" aria-label="Masthead navigation">
+			<li id="dw-mast-top-4" role="presentation">
+				<a href="http://www.ibm.com/developerworks/cn/" tabindex="0"><img src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dwn-dw-badge.png" width="43" height="22" alt="dW" aria-label="dW"></a>
+			</li>
+			<li id="dw-mast-top-0" role="presentation">
+				<div id="dw-mast-signin">
+					<a id="dw-mf-signin-link" class="" href="https://www.ibm.com/developerworks/dwwi/jsp/ssologin.jsp?d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&lang=cn&a=dwmav" title="" tabindex="2">登录</a>
+					<span class="dw-mf-signin-spacer">|</span>
+					<a id="dw-mf-reg-link" class="" href="https://www.ibm.com/developerworks/dwwi/jsp/ssoregister.jsp?d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&lang=cn&a=dwmav" title="" tabindex="3">注册</a>
+				</div>
+				<div id="dw-mast-auth-link" class="dw-mf-hide">
+					<a class="authenticated ibm-active" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" role="button" tabindex="2"></a>
+					<ul id="dw-mast-auth-menu" class="dw-mf-hide">
+						<li class="dw-mast-auth-menu-title" aria-hidden="true">developerWorks 社区</li>
+						<li>
+							<span class="dw-mast-auth-menu-arrow" aria-hidden="true">›</span><a href="https://www.ibm.com/developerworks/community/profiles/html/myProfileView.do?lang=zh" tabindex="3">我的概要信息</a>
+						</li>
+						<li>
+							<span class="dw-mast-auth-menu-arrow" aria-hidden="true">›</span><a href="https://www.ibm.com/developerworks/community/groups/service/html/mycommunities?lang=zh" tabindex="4">我的社区</a>
+						</li>
+						<li>
+							<span class="dw-mast-auth-menu-arrow" aria-hidden="true">›</span><a href="https://www.ibm.com/developerworks/community/news/?lang=zh" tabindex="5">设置</a>
+						</li>
+						<li class="dw-mast-auth-menu-divider"><hr></li>
+						<li>
+							<span class="dw-mast-auth-menu-arrow" aria-hidden="true">›</span><a id="dw-mast-signout-link" href="https://www.ibm.com/developerworks/dwwi/jsp/ssologout.jsp?d=http://www.ibm.com/developerworks/cn/&a=dwmav" tabindex="6">退出</a>
+						</li>
+					</ul>				
+				</div>
+			</li>
+			<li id="dw-mast-top-1">
+				<div></div>
+			</li>
+			<li id="dw-mast-top-3" role="presentation">
+				<a href="http://www.ibm.com/cn/zh/" tabindex="1">IBM</a>
+			</li>
+		</ul>
+	</div>
+
+    <!-- BOTTOM ROW -->
+	<div id="ibm-universal-nav-dw" aria-label="Site map">
+		<ul id="ibm-unav-links-dw">
+			<li id="ibm-unav-home-dwlogo">
+				<a href="http://www.ibm.com/developerworks/cn/"><img src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dwn-dw-wordmark.png" width="225" height="28" alt="developerWorks®"></a>
+			</li>
+		</ul>
+		<ul id="ibm-menu-links-dw" class="ibm-menu-links-dw-cn" role="toolbar" aria-label="Site map">
+			<li id="dw-mast-nav-0" role="presentation"><a href="http://www.ibm.com/developerworks/cn/topics/" tabindex="0">技术主题</a></li>
+			<li id="dw-mast-nav-1" role="presentation"><a href="http://www.ibm.com/developerworks/cn/downloads/" tabindex="0">软件下载</a></li>
+			<li id="dw-mast-nav-2" role="presentation"><a href="http://www.ibm.com/developerworks/community/?lang=zh" tabindex="0">社区</a></li>
+			<li id="dw-mast-nav-3" role="presentation"><a href="https://www.ibm.com/developerworks/community/groups/service/html/communityview?communityUuid=6d7f9e5d-5f89-4767-a006-a81b8d186370&lang=zh" tabindex="0">技术讲座</a></li>
+		</ul>
+		<form id="ibm-search-form" action="https://www.ibm.com/search/csass/search/" method="get" name="form1" aria-label="搜索 developerWorks" role="search">
+			<p>
+				<label for="q"><span class="ibm-access">搜索 developerWorks</span></label>
+				<input id="q" type="text" name="q" value="搜索 developerWorks" maxlength="100">
+				<input type="hidden" name="sn" value="dw">
+				<input type="hidden" name="lang" value="zh">
+				<input type="hidden" name="cc" value="CN">
+				<input type="hidden" name="en" value="utf">
+				<input type="hidden" name="hpp" value="20">
+				<input type="hidden" name="dws" value="cndw">
+				<input type="hidden" name="lo" value="zh">
+				<input id="ibm-search" class="ibm-btn-search" type="submit" value="提交">
+			</p>
+		</form>
+	</div>    
+	
+<div id="ibm-social-tools" style="display: block;"><ul><li><a class="ibm-share-print" title="打印本页面" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" rel="print" dojoattrid="0" role="button" tabindex="0">打印本页面</a></li><li><a class="ibm-share-email" title="用电子邮件发送本页面" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" rel="email" dojoattrid="1" role="button" tabindex="-1">用电子邮件发送本页面</a></li><li></li><li></li><li><a class="ibm-share-weibo" tabindex="-1" role="button" dojoattrid="2" rel="新浪微博" title="新浪微博" href="http://service.weibo.com/share/share.php?title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6&url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&language=zh_cn" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://service.weibo.com/share/share.php?title=%{TITLE}&amp;url=%{URL}&amp;language=zh_cn&#39;});">新浪微博</a></li><li><a class="ibm-share-renren" tabindex="-1" role="button" dojoattrid="3" rel="人人网" title="人人网" href="http://share.renren.com/share/buttonshare?title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6&link=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://share.renren.com/share/buttonshare?title=%{TITLE}&amp;link=%{URL}&#39;});">人人网</a></li><li><a class="dwcn-tencent-link" tabindex="-1" role="button" dojoattrid="4" rel="腾讯微博" title="腾讯微博" href="http://v.t.qq.com/share/share.php?title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6&url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://v.t.qq.com/share/share.php?title=%{TITLE}&amp;url=%{URL}&#39;});">腾讯微博</a></li><li><a class="dwcn-sohu-link" tabindex="-1" role="button" dojoattrid="5" rel="搜狐微博" title="搜狐微博" href="http://t.sohu.com/third/post.jsp?title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6%20&link=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://t.sohu.com/third/post.jsp?title=%{TITLE}%20&amp;link=%{URL}&#39;});">搜狐微博</a></li><li><a class="dwcn-netease-link" tabindex="-1" role="button" dojoattrid="6" rel="网易微博" title="网易微博" href="http://t.163.com/article/user/checkLogin.do?info=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6%20https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://t.163.com/article/user/checkLogin.do?info=%{TITLE}%20%{URL}&#39;});">网易微博</a></li><li><a class="ibm-share-digg" title="Digg" href="http://digg.com/submit?phase=2&url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6" rel="digg" dojoattrid="7" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://digg.com/submit?phase=2&amp;url=%{URL}&amp;title=%{TITLE}&#39;});">Digg</a></li><li><a class="ibm-share-facebook" title="Facebook" href="http://www.facebook.com/sharer.php?u=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&t=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6" rel="facebook" dojoattrid="8" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://www.facebook.com/sharer.php?u=%{URL}&amp;t=%{TITLE}&#39;});">Facebook</a></li><li><a class="ibm-share-twitter" title="Twitter" href="http://twitter.com/?status=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F%20-%20Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6" rel="twitter" dojoattrid="9" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://twitter.com/?status=%{URL}%20-%20%{TITLE}&#39;});">Twitter</a></li><li><a class="ibm-share-delicious" title="Delicious" href="http://delicious.com/post?url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6" rel="delicious" dojoattrid="10" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://delicious.com/post?url=%{URL}&amp;title=%{TITLE}&#39;});">Delicious</a></li><li><a class="ibm-share-linkedin" title="Linked In" href="http://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F&title=Apache%20Thrift%20-%20%E5%8F%AF%E4%BC%B8%E7%BC%A9%E7%9A%84%E8%B7%A8%E8%AF%AD%E8%A8%80%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6" rel="linkedin" dojoattrid="11" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:&#39;http://www.linkedin.com/shareArticle?mini=true&amp;url=%{URL}&amp;title=%{TITLE}&#39;});">Linked In</a></li></ul></div></div>
+<div id="fdiv" class="ibm-access"></div><!-- MASTHEAD_END -->
+	    
+<!-- LAYOUT -->
+<!-- LEADSPACE_BEGIN --> 
+<div id="ibm-access-cntr" role="main"><div id="ibm-leadspace-head">
+	<!-- LEADSPACE_BODY_BEGIN --> 
+	<div id="ibm-leadspace-body">
+		<!-- Navigation_Trail_BEGIN -->
+      <ul id="ibm-navigation-trail" role="navigation" aria-label="Bread Crumbs"><li><a href="http://www.ibm.com/developerworks/cn/">developerWorks 中国</a></li><li><a href="http://www.ibm.com/developerworks/cn/topics/">技术主题</a></li><li><a href="http://www.ibm.com/developerworks/cn/java/">Java technology</a></li><li><a href="http://www.ibm.com/developerworks/cn/views/java/libraryview.jsp">文档库</a></li></ul>
+		<!-- END_Navigation_Trail -->
+			<!-- Title_Subtitle -->
+			<h1>Apache Thrift - 可伸缩的跨语言服务开发框架
+		</h1>
+	</div>
+	<!-- LEADSPACE_BODY_END --> 
+	<!-- SUMMARY_BEGIN -->
+	<div id="dw-summary-area" class="dw-summary-columns">
+		<div class="ibm-col-6-4">
+		<p>Apache Thrift 是 Facebook 实现的一种高效的、支持多种编程语言的远程服务调用的框架。本文将从 Java 开发人员角度详细介绍 Apache Thrift 的架构、开发和部署，并且针对不同的传输协议和服务类型给出相应的 Java 实例，同时详细介绍 Thrift 异步客户端的实现，最后提出使用 Thrift 需要注意的事项。</p>
+		<p class="ibm-no-print ibm-ind-link">
+
+			
+			<span id="nCmts"><span>10</span><img class="dw-cmts-arrow" alt="" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-cmts-arrow.png" height="7" width="7"> <a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#icomments" class="dw-cmt-link">评论：</a></span>
+		</p>
+		</div>
+		<div class="ibm-col-6-2 dw-toc-margin">
+			<p class="dw-summary-author"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#authorN1001D" class="ibm-popup-link" onclick="ibmweb.overlay.show(&#39;authorN1001D&#39;,this);return false;" role="button">黄 晓军</a>, 实习生,  IBM</p>
+<div id="authorN1001D" class="ibm-common-overlay"><div class="ibm-head"><p><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#close" class="ibm-common-overlay-close">关闭 [x]</a></p></div><div class="ibm-body"><div class="ibm-main"><div class="ibm-title"><!--this is where the h2 usually
+                                    goes--></div><div class="ibm-container ibm-alternate"><div class="ibm-container-body">
+<p><!--.-->
+黄晓军，湖南大学信息科学与工程学院在读研究生，2011 年 5 月至 2011 年 9 月 IBM CDL实习，关注云计算等。</p><br><br></div></div></div></div><div class="ibm-footer"><!----></div></div>
+<p class="dw-summary-author"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#authorN1002D" class="ibm-popup-link" onclick="ibmweb.overlay.show(&#39;authorN1002D&#39;,this);return false;" role="button">张 静</a>, 软件工程师, IBM</p>
+<div id="authorN1002D" class="ibm-common-overlay"><div class="ibm-head"><p><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#close" class="ibm-common-overlay-close">关闭 [x]</a></p></div><div class="ibm-body"><div class="ibm-main"><div class="ibm-title"><!--this is where the h2 usually
+                                    goes--></div><div class="ibm-container ibm-alternate"><div class="ibm-container-body">
+<p><!--.-->
+<img class="dw-summary-bio-image-x64" alt="张 静" align="" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/zhangjing.jpg" valign="top">张静，IBM 中国软件实验室（CSDL BJ）China Emerging Technology Institute 成员，曾参与 Hyperservice, Database as Service, SaaS Development Environment项目的开发。主要的关注点在 Web 2.0 的领域数据建模、查询与访问, 数据库云计算，SaaS等</p><br><br></div></div></div></div><div class="ibm-footer"><!----></div></div>
+<p class="dw-summary-author"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#authorN10042" class="ibm-popup-link" onclick="ibmweb.overlay.show(&#39;authorN10042&#39;,this);return false;" role="button">张 凯</a>, 高级软件工程师,  IBM</p>
+<div id="authorN10042" class="ibm-common-overlay"><div class="ibm-head"><p><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#close" class="ibm-common-overlay-close">关闭 [x]</a></p></div><div class="ibm-body"><div class="ibm-main"><div class="ibm-title"><!--this is where the h2 usually
+                                    goes--></div><div class="ibm-container ibm-alternate"><div class="ibm-container-body">
+<p><!--.-->
+<img class="dw-summary-bio-image-x64" alt="作者照片" align="" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/kaizhang.jpg" valign="top">张凯，IBM中国研发中心高级软件工程师。从事 WebSphere 业务集成和业务流程管理相关产品研发，以及 CDL 新技术研究院云计算孵化项目研究。他对基于语义的信息检索，搜索引擎，Web 2.0，SOA，云计算和移动互联网应用很感兴趣。</p><br><br></div></div></div></div><div class="ibm-footer"><!----></div></div>
+			<p class="dw-summary-date">2012 年 1 月 16 日</p>
+			
+
+
+			<div aria-hidden="true" class="ibm-container" id="dw-toc"><div class="ibm-container-body"><ul class="ibm-twisty"><li><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#toggle" class="ibm-twisty-trigger ibm-twisty-trigger-closed"><img src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/c.gif" alt="+"></a><span class="ibm-twisty-head">内容</span><div class="ibm-twisty-body" style="display: none;"><ul style="font-size:0.8em" class="ibm-link-list"><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major1">前言：</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major2">一个简单的 Thrift 实例</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major3">Thrift 架构</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major4">数据类型</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major5">协议</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major6">传输层</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major7">服务端类型</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major8">Thrift 异步客户端构建</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major9">常见问题</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major10">安装部署</a></li><li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#major11">总结</a></li>
+<li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#resources">参考资料 </a></li>
+<li><a class="ibm-anchor-down-em-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#icomments">评论</a></li></ul></div></li></ul></div></div>
+		</div>
+	</div>
+	<!-- SUMMARY_END -->
+</div><div id="ibm-pcon">
+
+<!-- BEGIN_IBM-CONTENT -->
+<div id="ibm-content">
+
+<!-- BEGIN_IBM-CONTENT-BODY -->
+<div id="ibm-content-body">
+
+<!-- BEGIN_IBM-CONTENT-MAIN -->
+<div id="ibm-content-main">
+
+<!-- 1_1_COLUMN_BEGIN -->
+<div class="ibm-columns">
+<div class="ibm-col-1-1"><div class="dw-article-sidebar dw-bluemix" id="dwc-exp-a"><img src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/bluemix-graphic.png" height="64" width="64" alt=""><p>在 IBM Bluemix 云平台上开发并部署您的下一个应用。</p><p class="ibm-button-link-alternate dw-button-green"><a id="tutc-sbar-bmix-home-btn-ABa" href="https://developer.ibm.com/sso/bmregistration?lang=zh_CN&ca=dwchina-_-bluemix-_-j-lo-apachethrift-_-sidebar" class="dw-button-large">开始您的试用</a></p></div>
+
+<h2 id="major1">前言：</h2><p>目前流行的服务调用方式有很多种，例如基于 SOAP 消息格式的 Web Service，基于 JSON 消息格式的 RESTful 服务等。其中所用到的数据传输方式包括 XML，JSON 等，然而 XML 相对体积太大，传输效率低，JSON 体积较小，新颖，但还不够完善。本文将介绍由 Facebook 开发的远程服务调用框架 Apache Thrift，它采用接口描述语言定义并创建服务，支持可扩展的跨语言服务开发，所包含的代码生成引擎可以在多种语言中，如 C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell, C#, Cocoa, Smalltalk 等创建高效的、无缝的服务，其传输数据采用二进制格式，相对 XML 和 JSON 体积更小，对于高并发、大数据量和多语言的环境更有优势。本文将详细介绍 Thrift 的使用，并且提供丰富的实例代码加以解释说明，帮助使用者快速构建服务。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major2">一个简单的 Thrift 实例</h2><p>本文首先介绍一个简单的 Thrift 实现实例，使读者能够快速直观地了解什么是 Thrift 以及如何使用 Thrift 构建服务。</p><p>创建一个简单的服务 Hello。首先根据 Thrift 的语法规范编写脚本文件 Hello.thrift，代码如下：</p><h5 id="listing1">清单 1. Hello.thrift</h5><div class="codesection"><pre class="displaycode"> namespace java service.demo 
+ service Hello{ 
+  string helloString(1:string para) 
+  i32 helloInt(1:i32 para) 
+  bool helloBoolean(1:bool para) 
+  void helloVoid() 
+  string helloNull() 
+ }</pre></div><p>其中定义了服务 Hello 的五个方法，每个方法包含一个方法名，参数列表和返回类型。每个参数包括参数序号，参数类型以及参数名。
+ Thrift 是对 IDL(Interface Definition Language) 描述性语言的一种具体实现。因此，以上的服务描述文件使用 IDL 语法编写。使用 Thrift 工具编译 Hello.thrift，就会生成相应的 Hello.java 文件。该文件包含了在 Hello.thrift 文件中描述的服务 Hello 的接口定义，即 Hello.Iface 接口，以及服务调用的底层通信细节，包括客户端的调用逻辑 Hello.Client 以及服务器端的处理逻辑 Hello.Processor，用于构建客户端和服务器端的功能。
+ </p><p>创建 HelloServiceImpl.java 文件并实现 Hello.java 文件中的 Hello.Iface 接口，代码如下：</p><h5 id="listing2">清单 2. HelloServiceImpl.java</h5><div class="codesection"><pre class="displaycode"> package service.demo; 
+ import org.apache.thrift.TException; 
+ public class HelloServiceImpl implements Hello.Iface { 
+    @Override 
+    public boolean helloBoolean(boolean para) throws TException { 
+        return para; 
+    } 
+    @Override 
+    public int helloInt(int para) throws TException { 
+        try { 
+            Thread.sleep(20000); 
+        } catch (InterruptedException e) { 
+            e.printStackTrace(); 
+        } 
+        return para; 
+    } 
+    @Override 
+    public String helloNull() throws TException { 
+        return null; 
+    } 
+    @Override 
+    public String helloString(String para) throws TException { 
+        return para; 
+    } 
+    @Override 
+    public void helloVoid() throws TException { 
+        System.out.println("Hello World"); 
+    } 
+ }</pre></div><p>创建服务器端实现代码，将 HelloServiceImpl 作为具体的处理器传递给 Thrift 服务器，代码如下：</p><h5 id="listing3">清单 3. HelloServiceServer.java</h5><div class="codesection"><pre class="displaycode"> package service.server; 
+ import org.apache.thrift.TProcessor; 
+ import org.apache.thrift.protocol.TBinaryProtocol; 
+ import org.apache.thrift.protocol.TBinaryProtocol.Factory; 
+ import org.apache.thrift.server.TServer; 
+ import org.apache.thrift.server.TThreadPoolServer; 
+ import org.apache.thrift.transport.TServerSocket; 
+ import org.apache.thrift.transport.TTransportException; 
+ import service.demo.Hello; 
+ import service.demo.HelloServiceImpl; 
+
+ public class HelloServiceServer { 
+    /** 
+     * 启动 Thrift 服务器
+     * @param args 
+     */ 
+    public static void main(String[] args) { 
+        try { 
+            // 设置服务端口为 7911 
+            TServerSocket serverTransport = new TServerSocket(7911); 
+            // 设置协议工厂为 TBinaryProtocol.Factory 
+            Factory proFactory = new TBinaryProtocol.Factory(); 
+            // 关联处理器与 Hello 服务的实现
+            TProcessor processor = new Hello.Processor(new HelloServiceImpl()); 
+            TServer server = new TThreadPoolServer(processor, serverTransport, 
+                    proFactory); 
+            System.out.println("Start server on port 7911..."); 
+            server.serve(); 
+        } catch (TTransportException e) { 
+            e.printStackTrace(); 
+        } 
+    } 
+ }</pre></div><p>创建客户端实现代码，调用 Hello.client 访问服务端的逻辑实现，代码如下：</p><h5 id="listing4">清单 4. HelloServiceClient.java</h5><div class="codesection"><pre class="displaycode"> package service.client; 
+ import org.apache.thrift.TException; 
+ import org.apache.thrift.protocol.TBinaryProtocol; 
+ import org.apache.thrift.protocol.TProtocol; 
+ import org.apache.thrift.transport.TSocket; 
+ import org.apache.thrift.transport.TTransport; 
+ import org.apache.thrift.transport.TTransportException; 
+ import service.demo.Hello; 
+
+ public class HelloServiceClient { 
+ /** 
+     * 调用 Hello 服务
+     * @param args 
+     */ 
+    public static void main(String[] args) { 
+        try { 
+            // 设置调用的服务地址为本地，端口为 7911 
+            TTransport transport = new TSocket("localhost", 7911); 
+            transport.open(); 
+            // 设置传输协议为 TBinaryProtocol 
+            TProtocol protocol = new TBinaryProtocol(transport); 
+            Hello.Client client = new Hello.Client(protocol); 
+            // 调用服务的 helloVoid 方法
+            client.helloVoid(); 
+            transport.close(); 
+        } catch (TTransportException e) { 
+            e.printStackTrace(); 
+        } catch (TException e) { 
+            e.printStackTrace(); 
+        } 
+    } 
+ }</pre></div><p>代码编写完后运行服务器，再启动客户端调用服务 Hello 的方法 helloVoid，在服务器端的控制台窗口输出“Hello World”(helloVoid 方法实现在控制台打印字符串，没有返回值，所以客户端调用方法后没有返回值输出，读者可以自己尝试其他有返回值方法的调用，其结果可以打印在客户端的控制台窗口 )。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major3">Thrift 架构</h2><p>Thrift 包含一个完整的堆栈结构用于构建客户端和服务器端。下图描绘了 Thrift 的整体架构。</p><h5 id="fig1">图 1. 架构图</h5><img alt="图 1. 架构图" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/image003.jpg" width="348"><p>如图所示，图中黄色部分是用户实现的业务逻辑，褐色部分是根据 Thrift 定义的服务接口描述文件生成的客户端和服务器端代码框架，红色部分是根据 Thrift 文件生成代码实现数据的读写操作。红色部分以下是 Thrift 的传输体系、协议以及底层 I/O 通信，使用 Thrift 可以很方便的定义一个服务并且选择不同的传输协议和传输层而不用重新生成代码。</p><p>Thrift 服务器包含用于绑定协议和传输层的基础架构，它提供阻塞、非阻塞、单线程和多线程的模式运行在服务器上，可以配合服务器 / 容器一起运行，可以和现有的 J2EE 服务器 /Web 容器无缝的结合。</p><p>服务端和客户端具体的调用流程如下：</p><h5 id="fig2">图 2. Server 端启动、服务时序图（<a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/image004.png">查看大图</a>）</h5><img alt="图 2. Server 端启动、服务时序图" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/image005.gif" width="577"><p>该图所示是 HelloServiceServer 启动的过程以及服务被客户端调用时，服务器的响应过程。从图中我们可以看到，程序调用了 TThreadPoolServer 的 serve 方法后，server 进入阻塞监听状态，其阻塞在 TServerSocket 的 accept 方法上。当接收到来自客户端的消息后，服务器发起一个新线程处理这个消息请求，原线程再次进入阻塞状态。在新线程中，服务器通过 TBinaryProtocol 协议读取消息内容，调用 HelloServiceImpl 的 helloVoid 方法，并将结果写入 helloVoid_result 中传回客户端。</p><h5 id="fig3">图 3. Client 端调用服务时序图（<a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/image006.png">查看大图</a>）</h5><img alt="图 3. Client 端调用服务时序图" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/image007.gif" width="573"><p>该图所示是 HelloServiceClient 调用服务的过程以及接收到服务器端的返回值后处理结果的过程。从图中我们可以看到，程序调用了 Hello.Client 的 helloVoid 方法，在 helloVoid 方法中，通过 send_helloVoid 方法发送对服务的调用请求，通过 recv_helloVoid 方法接收服务处理请求后返回的结果。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major4">数据类型</h2><p>Thrift 脚本可定义的数据类型包括以下几种类型：</p><ul class="ibm-bullet-list"><li>
+基本类型：</li></ul><ul class="ibm-bullet-list"><ul class="ibm-bullet-list"><li>
+ bool：布尔值，true 或 false，对应 Java 的 boolean</li><li>
+ byte：8 位有符号整数，对应 Java 的 byte</li><li>
+ i16：16 位有符号整数，对应 Java 的 short</li><li>
+ i32：32 位有符号整数，对应 Java 的 int</li><li>
+ i64：64 位有符号整数，对应 Java 的 long</li><li>
+ double：64 位浮点数，对应 Java 的 double</li><li>
+ string：未知编码文本或二进制字符串，对应 Java 的 String</li></ul></ul><ul class="ibm-bullet-list"><li>
+结构体类型：<ul class="ibm-bullet-list"><li>
+ struct：定义公共的对象，类似于 C 语言中的结构体定义，在 Java 中是一个 JavaBean</li></ul></li><li>
+容器类型：<ul class="ibm-bullet-list"><li>
+ list：对应 Java 的 ArrayList</li><li>
+ set：对应 Java 的 HashSet</li><li>
+ map：对应 Java 的 HashMap</li></ul></li><li>
+异常类型：<ul class="ibm-bullet-list"><li>
+ exception：对应 Java 的 Exception</li></ul></li><li>
+服务类型：<ul class="ibm-bullet-list"><li>
+ service：对应服务的类</li></ul></li></ul><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major5">协议</h2><p>Thrift 可以让用户选择客户端与服务端之间传输通信协议的类别，在传输协议上总体划分为文本 (text) 和二进制 (binary) 传输协议，为节约带宽，提高传输效率，一般情况下使用二进制类型的传输协议为多数，有时还会使用基于文本类型的协议，这需要根据项目 / 产品中的实际需求。常用协议有以下几种：</p><ul class="ibm-bullet-list"><li>
+					 TBinaryProtocol —— 二进制编码格式进行数据传输
+			 <p>使用方法如清单 3 和清单 4 所示。</p></li><li>
+ TCompactProtocol —— 高效率的、密集的二进制编码格式进行数据传输
+			 <p>构建 TCompactProtocol 协议的服务器和客户端只需替换清单 3 和清单 4 中 TBinaryProtocol 协议部分即可，替换成如下代码：</p><h5 id="listing5">清单 5. 使用 TCompactProtocol 协议构建的 HelloServiceServer.java</h5><div class="codesection"><pre class="displaycode"> TCompactProtocol.Factory proFactory = new TCompactProtocol.Factory();</pre></div><h5 id="listing6">清单 6. 使用 TCompactProtocol 协议的 HelloServiceClient.java</h5><div class="codesection"><pre class="displaycode"> TCompactProtocol protocol = new TCompactProtocol(transport);</pre></div></li><li>
+ TJSONProtocol —— 使用 JSON 的数据编码协议进行数据传输
+				 <p>
+构建 TJSONProtocol 协议的服务器和客户端只需替换清单 3 和清单 4 中 TBinaryProtocol 协议部分即可，替换成如下代码：</p><h5 id="listing7">清单 7. 使用 TJSONProtocol 协议构建的 HelloServiceServer.java</h5><div class="codesection"><pre class="displaycode"> TJSONProtocol.Factory proFactory = new TJSONProtocol.Factory();</pre></div><h5 id="listing8">清单 8. 使用 TJSONProtocol 协议的 HelloServiceClient.java</h5><div class="codesection"><pre class="displaycode"> TJSONProtocol protocol = new TJSONProtocol(transport);</pre></div></li><li>
+ TSimpleJSONProtocol —— 只提供 JSON 只写的协议，适用于通过脚本语言解析</li></ul><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major6">传输层</h2><p>常用的传输层有以下几种：</p><ul class="ibm-bullet-list"><li>
+ TSocket —— 使用阻塞式 I/O 进行传输，是最常见的模式
+			 <p>使用方法如清单 4 所示。</p></li><li>
+ TFramedTransport —— 使用非阻塞方式，按块的大小进行传输，类似于 Java 中的 NIO
+				 <p>
+若使用 TFramedTransport 传输层，其服务器必须修改为非阻塞的服务类型，客户端只需替换清单 4 中 TTransport 部分，代码如下，清单 9 中 TNonblockingServerTransport 类是构建非阻塞 socket 的抽象类，TNonblockingServerSocket 类继承 TNonblockingServerTransport</p><h5 id="listing9">清单 9. 使用 TFramedTransport 传输层构建的 HelloServiceServer.java</h5><div class="codesection"><pre class="displaycode"> TNonblockingServerTransport serverTransport; 
+ serverTransport = new TNonblockingServerSocket(10005); 
+ Hello.Processor processor = new Hello.Processor(new HelloServiceImpl()); 
+ TServer server = new TNonblockingServer(processor, serverTransport); 
+ System.out.println("Start server on port 10005 ..."); 
+ server.serve();</pre></div><h5 id="listing10">清单 10. 使用 TFramedTransport 传输层的 HelloServiceClient.java</h5><div class="codesection"><pre class="displaycode"> TTransport transport = new TFramedTransport(new TSocket("localhost", 10005));</pre></div></li><li>
+ TNonblockingTransport —— 使用非阻塞方式，用于构建异步客户端
+			 <p>使用方法请参考 Thrift 异步客户端构建</p></li></ul><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major7">服务端类型</h2><p>常见的服务端类型有以下几种：</p><ul class="ibm-bullet-list"><li>
+ TSimpleServer —— 单线程服务器端使用标准的阻塞式 I/O
+			 <p>代码如下：</p><h5 id="listing11">清单 11. 使用 TSimpleServer 服务端构建的 HelloServiceServer.java</h5><div class="codesection"><pre class="displaycode"> TServerSocket serverTransport = new TServerSocket(7911); 
+ TProcessor processor = new Hello.Processor(new HelloServiceImpl()); 
+ TServer server = new TSimpleServer(processor, serverTransport); 
+ System.out.println("Start server on port 7911..."); 
+ server.serve();</pre></div><p>客户端的构建方式可参考清单 4。</p></li><li>
+ TThreadPoolServer —— 多线程服务器端使用标准的阻塞式 I/O
+			 <p>使用方法如清单 3 所示。</p></li><li>
+					 TNonblockingServer —— 多线程服务器端使用非阻塞式 I/O
+			 <p>使用方法请参考 Thrift 异步客户端构建</p></li></ul><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major8">Thrift 异步客户端构建</h2><p>Thrift 提供非阻塞的调用方式，可构建异步客户端。在这种方式中，Thrift 提供了新的类 TAsyncClientManager 用于管理客户端的请求，在一个线程上追踪请求和响应，同时通过接口 AsyncClient 传递标准的参数和 callback 对象，服务调用完成后，callback 提供了处理调用结果和异常的方法。</p><p>首先我们看 callback 的实现：</p><h5 id="listing12">清单 12.CallBack 的实现：MethodCallback.java</h5><div class="codesection"><pre class="displaycode"> package service.callback; 
+ import org.apache.thrift.async.AsyncMethodCallback; 
+
+ public class MethodCallback implements AsyncMethodCallback { 
+    Object response = null; 
+
+    public Object getResult() { 
+        // 返回结果值
+        return this.response; 
+    } 
+
+    // 处理服务返回的结果值
+    @Override 
+    public void onComplete(Object response) { 
+        this.response = response; 
+    } 
+    // 处理调用服务过程中出现的异常
+    @Override 
+    public void onError(Throwable throwable) { 
+
+    } 
+ }</pre></div><p>如代码所示，onComplete 方法接收服务处理后的结果，此处我们将结果 response 直接赋值给 callback 的私有属性 response。onError 方法接收服务处理过程中抛出的异常，此处未对异常进行处理。</p><p>创建非阻塞服务器端实现代码，将 HelloServiceImpl 作为具体的处理器传递给异步 Thrift 服务器，代码如下：</p><h5 id="listing13">清单 13.HelloServiceAsyncServer.java</h5><div class="codesection"><pre class="displaycode"> package service.server; 
+ import org.apache.thrift.server.TNonblockingServer; 
+ import org.apache.thrift.server.TServer; 
+ import org.apache.thrift.transport.TNonblockingServerSocket; 
+ import org.apache.thrift.transport.TNonblockingServerTransport; 
+ import org.apache.thrift.transport.TTransportException; 
+ import service.demo.Hello; 
+ import service.demo.HelloServiceImpl; 
+
+ public class HelloServiceAsyncServer { 
+    /** 
+     * 启动 Thrift 异步服务器
+     * @param args 
+     */ 
+    public static void main(String[] args) { 
+        TNonblockingServerTransport serverTransport; 
+        try { 
+            serverTransport = new TNonblockingServerSocket(10005); 
+            Hello.Processor processor = new Hello.Processor( 
+                    new HelloServiceImpl()); 
+            TServer server = new TNonblockingServer(processor, serverTransport); 
+            System.out.println("Start server on port 10005 ..."); 
+            server.serve(); 
+        } catch (TTransportException e) { 
+            e.printStackTrace(); 
+        } 
+    } 
+ }</pre></div><p>HelloServiceAsyncServer 通过 java.nio.channels.ServerSocketChannel 创建非阻塞的服务器端等待客户端的连接。</p><p>创建异步客户端实现代码，调用 Hello.AsyncClient 访问服务端的逻辑实现，将 MethodCallback 对象作为参数传入调用方法中，代码如下：</p><h5 id="listing14">清单 14.HelloServiceAsyncClient.java</h5><div class="codesection"><pre class="displaycode"> package service.client; 
+ import java.io.IOException; 
+ import org.apache.thrift.async.AsyncMethodCallback; 
+ import org.apache.thrift.async.TAsyncClientManager; 
+ import org.apache.thrift.protocol.TBinaryProtocol; 
+ import org.apache.thrift.protocol.TProtocolFactory; 
+ import org.apache.thrift.transport.TNonblockingSocket; 
+ import org.apache.thrift.transport.TNonblockingTransport; 
+ import service.callback.MethodCallback; 
+ import service.demo.Hello; 
+
+ public class HelloServiceAsyncClient { 
+    /** 
+     * 调用 Hello 服务
+     * @param args 
+     */ 
+    public static void main(String[] args) throws Exception { 
+        try { 
+            TAsyncClientManager clientManager = new TAsyncClientManager(); 
+            TNonblockingTransport transport = new TNonblockingSocket( 
+                    "localhost", 10005); 
+            TProtocolFactory protocol = new TBinaryProtocol.Factory(); 
+            Hello.AsyncClient asyncClient = new Hello.AsyncClient(protocol, 
+                    clientManager, transport); 
+            System.out.println("Client calls ....."); 
+            MethodCallback callBack = new MethodCallback(); 
+            asyncClient.helloString("Hello World", callBack); 
+            Object res = callBack.getResult(); 
+            while (res == null) { 
+                res = callBack.getResult(); 
+            } 
+            System.out.println(((Hello.AsyncClient.helloString_call) res) 
+                    .getResult()); 
+        } catch (IOException e) { 
+            e.printStackTrace(); 
+        } 
+  } 
+ }</pre></div><p>HelloServiceAsyncClient 通过 java.nio.channels.Socketchannel 创建异步客户端与服务器建立连接。在本文中异步客户端通过以下的循环代码实现了同步效果，读者可去除这部分代码后再运行对比。</p><h5 id="N101A8">清单 15. 异步客户端实现同步效果代码段</h5><div class="codesection"><pre class="displaycode">Object res = callBack.getResult();
+// 等待服务调用后的返回结果
+while (res == null) {
+   res = callBack.getResult();
+}</pre></div><p>通过与清单 9 和清单 10 的代码比较，我们可以构建一个 TNonblockingServer 服务类型的服务端，在客户端构建一个 TFramedTransport 传输层的同步客户端和一个 TNonblockingTransport 传输层的异步客户端，那么一个服务就可以通过一个 socket 端口提供两种不同的调用方式。有兴趣的读者可以尝试一下。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major9">常见问题</h2><h3 id="minor9.1">NULL 问题</h3><p>我们在对服务的某个方法调用时，有时会出现该方法返回 null 值的情况，在 Thrift 中，直接调用一个返回 null 值的方法会抛出 TApplicationException 异常。在清单 2 中，HelloServiceImpl 里实现了 helloNull 方法，返回 null 值，我们在 HelloServiceClient.java 中加入调用该方法的代码，出现如下图所示的异常：</p><h5 id="fig4">图 4. TApplicationException 异常</h5><img alt="图 4. TApplicationException 异常" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/image009.jpg" width="572"><p>为了处理返回 null 值情况，我们要捕获该异常，并进行相应的处理，具体客户端代码实现如下：</p><h5 id="listing15">清单 16. 处理服务返回值为 null 的代码</h5><div class="codesection"><pre class="displaycode"> package service.client; 
+ import org.apache.thrift.TApplicationException; 
+ import org.apache.thrift.TException; 
+ import org.apache.thrift.protocol.TBinaryProtocol; 
+ import org.apache.thrift.protocol.TProtocol; 
+ import org.apache.thrift.transport.TSocket; 
+ import org.apache.thrift.transport.TTransport; 
+ import org.apache.thrift.transport.TTransportException; 
+ import service.demo.Hello; 
+
+ public class HelloServiceClient { 
+    /** 
+     * 调用 Hello 服务，并处理 null 值问题
+     * @param args 
+     */ 
+    public static void main(String[] args) { 
+        try { 
+            TTransport transport = new TSocket("localhost", 7911); 
+            transport.open(); 
+            TProtocol protocol = new TBinaryProtocol(transport); 
+            Hello.Client client = new Hello.Client(protocol); 
+            System.out.println(client.helloNull()); 
+            transport.close(); 
+        } catch (TTransportException e) { 
+            e.printStackTrace(); 
+        } catch (TException e) { 
+            if (e instanceof TApplicationException 
+                    &amp;&amp; ((TApplicationException) e).getType() ==   
+                                 TApplicationException.MISSING_RESULT) { 
+                System.out.println("The result of helloNull function is NULL"); 
+            } 
+        } 
+    } 
+ }</pre></div><p>调用 helloNull 方法后，会抛出 TApplicationException 异常，并且异常种类为 MISSING_RESULT，本段代码显示，捕获该异常后，直接在控制台打印“The result of helloNull function is NULL”信息。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major10">安装部署</h2><p>Apache Thrift 的官方网站为：<a href="http://thrift.apache.org/tutorial/%20">http://thrift.apache.org/tutorial/</a>，具体安装步骤如下：</p><ol type="1"><li>
+下载 thrift 源文件（<a href="http://svn.apache.org/repos/asf/thrift/tags/thrift-0.6.1/">http://svn.apache.org/repos/asf/thrift/tags/thrift-0.6.1/</a>）</li><li>
+将 thrift 源文件导入 eclipse，进入 /lib/java 目录，使用 ant 编译 build.xml 获得 libthrift-0.6.1-snapshot.jar</li><li>
+将 libthrift-0.6.1-snapshot.jar、slf4j-api-1.5.8.jar、slf4j-log4j12-1.5.8.jar 和 log4j-1.2.14.jar 导入 eclipse 开发环境</li><li>
+下载 thrift 编译工具，该工具可将 thrift 脚本文件编译成 java 文件，下载地址：<a href="http://apache.etoak.com/thrift/0.6.0/thrift-0.6.1.exe">http://apache.etoak.com//thrift/0.6.0/thrift-0.6.1.exe</a></li><li>
+创建 Hello.thrift 脚本文件，具体代码如上一章节所述，进入 thrift-0.6.1.exe 所在目录，执行命令"thrift-0.6.1.exe -gen java x:\Hello.thrift"，在当前运行盘符下，可看见 gen-java 目录，进入目录可看到生成的 Java 代码。更多 thrift 的命令内容，请参考 thrift 自带的 help 命令</li><li>
+编写服务端和客户端代码，完成 thrift 的安装和部署</li></ol><p>基于 Apache Thrift 框架生成的服务包括客户端和服务器端，具体的部署模式如下所示：</p><h5 id="fig5">图 5. 部署图</h5><img alt="图 5. 部署图" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/image011.jpg" width="519"><p>从图中我们可以看到，客户端和服务器端部署时，需要用到公共的 jar 包和 java 文件，如图“Common file”区域，其中 Hello.java 由 Hello.thrift 编译而来。在服务器端，服务必须实现 Hello.Iface 接口，同时要包括服务器的启动代码 HelloServiceServer.java。在客户端，包括客户端调用服务的代码 HelloServiceClient.java。客户端和服务器通过 Hello.java 提供的 API 实现远程服务调用。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="major11">总结</h2><p>本文介绍了 Apache Thrift 的安装部署和架构，并通过大量实例介绍了在不同情况下如何使用 Apache Thrift 来构建服务，同时着重介绍了 Thrift 异步客户端的构建，希望能给读者带来一些帮助。</p><!--CMA ID: 787660--><!--Site ID: 10--><!--XSLT stylesheet used to transform this file: dw-document-html-7.0.xsl-->
+
+
+</div>
+</div>
+<!-- 1_1_COLUMN_END -->
+
+<!-- SPLIT_COLUMNS_BEGIN -->
+<div class="ibm-columns">
+
+<!-- 6_4_COLUMN_BEGIN -->
+<div class="ibm-col-6-4">
+
+<h2 id="resources" class="ibm-rule">参考资料 </h2><h3 class="dw-resources-category-heading">学习</h3><ul class="ibm-bullet-list"><li><a href="http://thrift.apache.org/">Apache Thrift 官网</a>：可下载 Thrift 工具和源码。</li><li><a href="http://wiki.apache.org/thrift/ThriftFeatures">Thrift Features and Non-features</a>：Thrift 的功能特点和不足之处。</li><li><a href="http://jnb.ociweb.com/jnb/jnbJun2009.html">Apache Thrift 介绍</a>：介绍 Thrift 架构、协议、传输层和服务端类型，并与其他构建服务的方法 ( 如：REST) 进行比较分析。</li><li><a href="http://www.javabloger.com/article/thrift-java-code-example.html">Thrift 的安装部署</a>：Thrift 的安装部署说明</li><li><a href="http://thrift.apache.org/static/thrift-20070401.pdf">Thrift: Scalable Cross-Language Services Implementation</a>：Thrift 官方文档，详细介绍 Thrift 的设计</li><li><a href="http://people.apache.org/~jfarrell/thrift/0.6.1/javadoc/">Thrift API</a>：关于 Apache Thrift 0.6.1 构建服务端和客户端的 API 手册</li><li><a href="http://wenku.baidu.com/view/f77bc1a6f524ccbff1218461.html">Thrift 实例</a>：Thrift 的简单应用实例</li><li><a href="http://blog.rapleaf.com/dev/2010/06/23/fully-async-thrift-client-in-java/">Fully async Thrift client in Java</a>：关于 Thrift 异步客户端的介绍</li><li><a href="http://www.ibm.com/developerworks/cn/java/" onmouseover="linkQueryAppend(this)">developerWorks Java 技术专区</a>：这里有数百篇关于 Java 编程各个方面的文章。
+</li></ul><h3 class="dw-resources-category-heading">讨论</h3><ul class="ibm-bullet-list"><li>加入 <a href="http://www.ibm.com/developerworks/cn/community/" onmouseover="linkQueryAppend(this)">developerWorks 中文社区</a>。查看开发人员推动的博客、论坛、组和维基，并与其他 developerWorks 用户交流。</li></ul>
+
+<!-- INLINE_COMMENTS_BEGIN -->
+<h2 id="icomments" class="ibm-alternate-rule ibm-no-print">条评论</h2>
+    
+<div class="ibm-no-print" id="dw-icomments-container">	
+	<div id="threadShow"><img id="imgPlHdr" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/animated-progress-38x38c.gif" alt="" style="display: none;"><div id="cmtTog"><div class="ibm-container ibm-alternate-two dw-commentbox dw-noborder"><div class="ibm-container-body dw-commentbox dw-noborder"><p id="signInSect">请 <a onclick="var e=arguments[0] || window.event; dwsi.siInst &amp;&amp; dwsi.siInst.showSignIn(); if (e.stopPropagation){ e.stopPropagation();} else { e.cancelBubble = true; } e.preventDefault &amp;&amp; e.preventDefault(); return false;" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#">登录</a> 或 <a href="https://www.ibm.com/developerworks/dwwi/jsp/ssoregister.jsp?d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Fjava%2Fj-lo-apachethrift%2F%23icomments&lang=cn&a=dwmav">注册</a>  后发表评论。</p><p id="cmtHead"><label for="newCmt"><strong>添加评论:</strong></label></p><p>注意：评论中不支持 HTML 语法</p><div id="infoCmt"></div><form focus="name" enctype="multipart/form-data" method="post" action="" name="form" class="ibm-column-form ibm-styled-form"><p class="6-4-textarea"><textarea rows="5" name="newCmt" id="newCmt" class="dw-inoperable" disabled=""></textarea><br></p><span class="ibm-input-group"><input type="checkbox" value="1" name="comment_notification" id="comment_notification" disabled="disabled"><label id="notifyText" class="ibm-form-note dw-btn-cancel-sec" for="comment_notification">有新评论时提醒我</label></span><span class="ibm-form-note dw-btn-cancel-sec notifySection" id="maxCharsCount">剩余 <span id="charCount">1000</span> 字符</span><p class="ibm-buttons-row"><input type="button" value="发布" name="postCmt" id="postCmt" class="ibm-btn-sec ibm-btn-small ibm-disabled" disabled="disabled"></p></form></div></div><div class="ibm-alternate-rule"><hr></div><div id="topControl" class="ibm-container ibm-alternate-two dw-comment-totals" style=""><div class="ibm-container-body"><form id="selectComments" method="get" action=""><p>&nbsp;<span class="dw-comment-totals-label"><strong>共有评论 (<span id="numCmts">10</span>)</strong></span><span class="dw-how-many-comments-label" id="dropdownCmts"><label for="howManyComments"><strong>显示：</strong></label>&nbsp;<select name="comments" id="howManyComments" class="dw-how-many-comments"><option selected="selected" value="recent">最新评论 </option><option value="all">所有评论</option></select><input type="image" class="ibm-btn-go" name="ibm-go" value="Go" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/short-btn.gif" alt="Go"><br></span></p></form></div></div><div id="cmtSect"><div class="comment"><div class="dw-icomment-container"><div class="dw-icomment-body dw-noborder"><div class="dw-icomment-body dw-noborder"><p>用c++的时候，service名为hello，不能有helloNull的接口，否则编译不过，原因是thrift会生成helloNull类<br>java不知道是否有此问题<br>thrift版本是0.9.1</p><p class="ibm-item-note-alternate dw-item-note-alternate-left">由 <strong><a href="https://www.ibm.com/developerworks/community/profiles/user/hzw-up">hzw-up</a></strong>  于 2014年02月09日发布 </p><p class="ibm-ind-link ibm-item-note-alternate dw-item-note-alternate-right"><a class="ibm-caution-link dw-report-abuse" href="https://www.ibm.com/developerworks/community/report?lang=zh&referingURL=https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/&mymessage=%E8%AF%84%E8%AE%BA%EF%BC%9A%20%E7%94%A8c%2B%2B%E7%9A%84%E6%97%B6%E5%80%99%EF%BC%8Cservice%E5%90%8D%E4%B8%BAhello%EF%BC%8C%E4%B8%8D%E8%83%BD%E6%9C%89helloNull%E7%9A%84%E6%8E%A5%E5%8F%A3%EF%BC%8C%E5%90%A6%E5%88%99%E7%BC%96%E8%AF%91%E4%B8%8D%E8%BF%87%EF%BC%8C%E5%8E%9F%E5%9B%A0%E6%98%AFthrift%E4%BC%9A%E7%94%9F%E6%88%90helloNull%E7%B1%BBjava%E4%B8%8D%E7%9F%A5%E9%81%93%E6%98%AF%E5%90%A6%E6%9C%89%E6%AD%A4%E9%97%AE%E9%A2%98thrift%E7%89%88%E6%9C%AC%E6%98%AF0.9.1%0D%E7%94%B1%20hzw-up%20%20%E4%BA%8E%202014%E5%B9%B402%E6%9C%8809%E6%97%A5%E5%8F%91%E5%B8%83%20%0D%0D--%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA--" target="_self">报告滥用</a></p><div class="dw-clear-both"></div></div></div></div></div><div class="ibm-rule"><hr></div><div class="comment"><div class="dw-icomment-container"><div class="dw-icomment-body dw-noborder"><div class="dw-icomment-body dw-noborder"><p>"学无止境啊，真是越学越觉得什么都不会了</p><p class="ibm-item-note-alternate dw-item-note-alternate-left">由 <strong><a href="https://www.ibm.com/developerworks/community/profiles/user/%E9%98%BF%E7%8B%B8%E7%A0%81%E5%86%9C">阿狸码农</a></strong>  于 2013年12月03日发布 </p><p class="ibm-ind-link ibm-item-note-alternate dw-item-note-alternate-right"><a class="ibm-caution-link dw-report-abuse" href="https://www.ibm.com/developerworks/community/report?lang=zh&referingURL=https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/&mymessage=%E8%AF%84%E8%AE%BA%EF%BC%9A%20%22%E5%AD%A6%E6%97%A0%E6%AD%A2%E5%A2%83%E5%95%8A%EF%BC%8C%E7%9C%9F%E6%98%AF%E8%B6%8A%E5%AD%A6%E8%B6%8A%E8%A7%89%E5%BE%97%E4%BB%80%E4%B9%88%E9%83%BD%E4%B8%8D%E4%BC%9A%E4%BA%86%0D%E7%94%B1%20%E9%98%BF%E7%8B%B8%E7%A0%81%E5%86%9C%20%20%E4%BA%8E%202013%E5%B9%B412%E6%9C%8803%E6%97%A5%E5%8F%91%E5%B8%83%20%0D%0D--%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA--" target="_self">报告滥用</a></p><div class="dw-clear-both"></div></div></div></div></div><div class="ibm-rule"><hr></div><div class="comment"><div class="dw-icomment-container"><div class="dw-icomment-body dw-noborder"><div class="dw-icomment-body dw-noborder"><p>"不错，可以看看。</p><p class="ibm-item-note-alternate dw-item-note-alternate-left">由 <strong><a href="https://www.ibm.com/developerworks/community/profiles/user/%E7%BE%BD%E8%90%BD%E6%98%9F%E8%BE%B0">羽落星辰</a></strong>  于 2013年09月03日发布 </p><p class="ibm-ind-link ibm-item-note-alternate dw-item-note-alternate-right"><a class="ibm-caution-link dw-report-abuse" href="https://www.ibm.com/developerworks/community/report?lang=zh&referingURL=https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/&mymessage=%E8%AF%84%E8%AE%BA%EF%BC%9A%20%22%E4%B8%8D%E9%94%99%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E7%9C%8B%E3%80%82%0D%E7%94%B1%20%E7%BE%BD%E8%90%BD%E6%98%9F%E8%BE%B0%20%20%E4%BA%8E%202013%E5%B9%B409%E6%9C%8803%E6%97%A5%E5%8F%91%E5%B8%83%20%0D%0D--%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA--" target="_self">报告滥用</a></p><div class="dw-clear-both"></div></div></div></div></div><div class="ibm-rule"><hr></div><div class="comment"><div class="dw-icomment-container"><div class="dw-icomment-body dw-noborder"><div class="dw-icomment-body dw-noborder"><p>"正在尝试中。</p><p class="ibm-item-note-alternate dw-item-note-alternate-left">由 <strong><a href="https://www.ibm.com/developerworks/community/profiles/user/%E6%B3%A1%E6%B3%A1%E5%93%A5">泡泡哥</a></strong>  于 2013年04月24日发布 </p><p class="ibm-ind-link ibm-item-note-alternate dw-item-note-alternate-right"><a class="ibm-caution-link dw-report-abuse" href="https://www.ibm.com/developerworks/community/report?lang=zh&referingURL=https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/&mymessage=%E8%AF%84%E8%AE%BA%EF%BC%9A%20%22%E6%AD%A3%E5%9C%A8%E5%B0%9D%E8%AF%95%E4%B8%AD%E3%80%82%0D%E7%94%B1%20%E6%B3%A1%E6%B3%A1%E5%93%A5%20%20%E4%BA%8E%202013%E5%B9%B404%E6%9C%8824%E6%97%A5%E5%8F%91%E5%B8%83%20%0D%0D--%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA--" target="_self">报告滥用</a></p><div class="dw-clear-both"></div></div></div></div></div><div class="ibm-rule"><hr></div><div class="comment"><div class="dw-icomment-container"><div class="dw-icomment-body dw-noborder"><div class="dw-icomment-body dw-noborder"><p>本文非常不错~收藏 ,很有条理。感谢~<br>同时在Thrift 0.9.0版本中.<br>服务器生成时把参数改为传Args对象了<br>\t\t\tArgs args = new Args(serverTransport);<br>\t\t\targs.processor(processor);<br><br>\t\t\t// server<br>\t\t\tTServer server = new TSimpleServer(args);<br>\t\t\tserver.serve();<br>异步服务器那部分，在0.9.0中已经支持泛行了。</p><p class="ibm-item-note-alternate dw-item-note-alternate-left">由 <strong><a href="https://www.ibm.com/developerworks/community/profiles/user/stane.jia">stane.jia</a></strong>  于 2012年11月08日发布 </p><p class="ibm-ind-link ibm-item-note-alternate dw-item-note-alternate-right"><a class="ibm-caution-link dw-report-abuse" href="https://www.ibm.com/developerworks/community/report?lang=zh&referingURL=https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/&mymessage=%E8%AF%84%E8%AE%BA%EF%BC%9A%20%E6%9C%AC%E6%96%87%E9%9D%9E%E5%B8%B8%E4%B8%8D%E9%94%99~%E6%94%B6%E8%97%8F%20%2C%E5%BE%88%E6%9C%89%E6%9D%A1%E7%90%86%E3%80%82%E6%84%9F%E8%B0%A2~%E5%90%8C%E6%97%B6%E5%9C%A8Thrift%200.9.0%E7%89%88%E6%9C%AC%E4%B8%AD.%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%94%9F%E6%88%90%E6%97%B6%E6%8A%8A%E5%8F%82%E6%95%B0%E6%94%B9%E4%B8%BA%E4%BC%A0Args%E5%AF%B9%E8%B1%A1%E4%BA%86%5Ct%5Ct%5CtArgs%20args%20%3D%20new%20Args(serverTransport)%3B%5Ct%5Ct%5Ctargs.processor(processor)%3B%5Ct%5Ct%5Ct%2F%2F%20server%5Ct%5Ct%5CtTServer%20server%20%3D%20new%20TSimpleServer(args)%3B%5Ct%5Ct%5Ctserver.serve()%3B%E5%BC%82%E6%AD%A5%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%82%A3%E9%83%A8%E5%88%86%EF%BC%8C%E5%9C%A80.9.0%E4%B8%AD%E5%B7%B2%E7%BB%8F%E6%94%AF%E6%8C%81%E6%B3%9B%E8%A1%8C%E4%BA%86%E3%80%82%0D%E7%94%B1%20stane.jia%20%20%E4%BA%8E%202012%E5%B9%B411%E6%9C%8808%E6%97%A5%E5%8F%91%E5%B8%83%20%0D%0D--%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA--" target="_self">报告滥用</a></p><div class="dw-clear-both"></div></div></div></div></div></div></div><div id="bottomControl" class="ibm-container ibm-alternate-two dw-comment-totals" style="display:none"><div class="ibm-container-body"><form id="selectComments2" method="get" action=""><p>&nbsp;<span class="dw-comment-totals-label"><strong>共有评论 (<span id="numCmts2">10</span>)</strong></span><span class="dw-how-many-comments-label" id="dropdownCmts2"><label for="howManyComments2"><strong>显示：</strong></label>&nbsp;<select name="comments" id="howManyComments2" class="dw-how-many-comments"><option selected="selected" value="recent">最新评论 </option><option value="all">所有评论</option></select><input type="image" class="ibm-btn-go" name="ibm-go" value="Go" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/short-btn.gif" alt="Go"><br></span></p></form></div></div></div>
+</div>
+<!-- Sign in OVERLAY STARTS HERE -->
+    
+<!-- Sign in OVERLAY STARTS HERE -->
+<div class="ibm-common-overlay" id="signin_overlay">
+<div class="ibm-head">
+<p><a class="ibm-common-overlay-close" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" onclick="dwsi.siInst.clearForm();">关闭 [x]</a></p>
+</div>
+<div class="ibm-body">
+<div class="ibm-main">
+
+ <div class="ibm-title">
+<h2>developerWorks: 登录</h2>
+<div id="ibm-overlay-error-signin" class="no-display"></div>
+</div>
+<div class="ibm-container ibm-alternate ibm-buttons-last">
+<div class="ibm-container-body">
+<p class="ibm-overlay-intro">标有星（<span class="ibm-required">*</span>）号的字段是必填字段。</p> 
+<form class="ibm-column-form" id="sFormId" action="" method="post" name="sForm" onsubmit="return false;">
+<p><label for="ibmid">IBM ID:<span class="ibm-required">*</span></label><span>
+    <input name="ibm-id" id="ibmid" size="25" value="" class="required" type="text" onkeypress="dwsi.siInst.handleEP(event,this.form);" aria-required="true" style="background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAYAAABSO15qAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QsPDhss3LcOZQAAAU5JREFUOMvdkzFLA0EQhd/bO7iIYmklaCUopLAQA6KNaawt9BeIgnUwLHPJRchfEBR7CyGWgiDY2SlIQBT/gDaCoGDudiy8SLwkBiwz1c7y+GZ25i0wnFEqlSZFZKGdi8iiiOR7aU32QkR2c7ncPcljAARAkgckb8IwrGf1fg/oJ8lRAHkR2VDVmOQ8AKjqY1bMHgCGYXhFchnAg6omJGcBXEZRtNoXYK2dMsaMt1qtD9/3p40x5yS9tHICYF1Vn0mOxXH8Uq/Xb389wff9PQDbQRB0t/QNOiPZ1h4B2MoO0fxnYz8dOOcOVbWhqq8kJzzPa3RAXZIkawCenHMjJN/+GiIqlcoFgKKq3pEMAMwAuCa5VK1W3SAfbAIopum+cy5KzwXn3M5AI6XVYlVt1mq1U8/zTlS1CeC9j2+6o1wuz1lrVzpWXLDWTg3pz/0CQnd2Jos49xUAAAAASUVORK5CYII=); background-attachment: scroll; background-position: 100% 50%; background-repeat: no-repeat;" autocomplete="off">
+    <br><a onclick="window.location=&#39;/developerworks/dwwi/DWAuthRouter?m=reg&amp;lang=zh_CN&amp;d=&#39;+encodeURIComponent(location.protocol + &#39;//&#39; + location.hostname + location.pathname + &#39;#icomments&#39;); return false;" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" class="ibm-forward-link">需要一个 IBM ID？</a> <br>
+    <a class="ibm-forward-link" href="https://www.ibm.com/developerworks/dwwi/jsp/WSHelp.jsp?lang=zh_CN">忘记 IBM ID？</a> 
+</span>
+</p> 
+<p><label for="password">密码：<span class="ibm-required">*</span></label><span>
+    <input name="password" id="password" size="25" value="" class="required" type="password" onkeypress="dwsi.siInst.handleEP(event,this.form);" style="background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAYAAABSO15qAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QsPDhss3LcOZQAAAU5JREFUOMvdkzFLA0EQhd/bO7iIYmklaCUopLAQA6KNaawt9BeIgnUwLHPJRchfEBR7CyGWgiDY2SlIQBT/gDaCoGDudiy8SLwkBiwz1c7y+GZ25i0wnFEqlSZFZKGdi8iiiOR7aU32QkR2c7ncPcljAARAkgckb8IwrGf1fg/oJ8lRAHkR2VDVmOQ8AKjqY1bMHgCGYXhFchnAg6omJGcBXEZRtNoXYK2dMsaMt1qtD9/3p40x5yS9tHICYF1Vn0mOxXH8Uq/Xb389wff9PQDbQRB0t/QNOiPZ1h4B2MoO0fxnYz8dOOcOVbWhqq8kJzzPa3RAXZIkawCenHMjJN/+GiIqlcoFgKKq3pEMAMwAuCa5VK1W3SAfbAIopum+cy5KzwXn3M5AI6XVYlVt1mq1U8/zTlS1CeC9j2+6o1wuz1lrVzpWXLDWTg3pz/0CQnd2Jos49xUAAAAASUVORK5CYII=); background-attachment: scroll; background-position: 100% 50%; background-repeat: no-repeat;" autocomplete="off">
+    <br><a class="ibm-forward-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" onclick="(function ()
+        {window.location=&#39;https://www.ibm.com/account/profile?page=forgot&amp;lang=zh_CN&amp;appname=ibm&amp;required=null&amp;d=&#39;+encodeURIComponent(dwsi.siInst.getAuthUrl())+&#39;%3Fm%3Dloginpage%26lang%3Dzh_CN%26d%3D&#39;+encodeURIComponent(location.href);})();">忘记密码？</a>
+    <br><a class="ibm-forward-link" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" onclick="(function () {window.location=&#39;https://www.ibm.com/account/profile?page=chpw&amp;lang=zh_CN&amp;appname=ibm&amp;required=null&amp;d=&#39;+encodeURIComponent(location.href);})();">更改您的密码</a></span></p> 
+<p class="dw-perm-box">
+	<span><input id="perm" type="checkbox" name="perm_name"><label for="perm"> 保持登录。</label></span>
+</p>
+<p>单击提交则表示您同意developerWorks 的条款和条件。 <a href="https://www.ibm.com/developerworks/community/terms?lang=zh">查看条款和条件</a>。</p>
+<div class="ibm-buttons-row">
+   <p><input class="ibm-btn-arrow-pri" name="ibm-submit" value="提交" onclick="dwsi.siInst.signin();return false;" type="submit"><span class="ibm-sep">&nbsp;</span>
+<input value="取消" type="button" name="ibm-cancel" class="ibm-btn-cancel-sec" onclick="dwsi.siInst.clearForm();ibmweb.overlay.hide(&#39;signin_overlay&#39;);return false;"></p>
+</div>
+</form>
+ <div class="ibm-overlay-rule"><hr></div> 
+
+<p>在您首次登录 developerWorks 时，会为您创建一份个人概要。<strong>您的个人概要中的信息（您的姓名、国家/地区，以及公司名称）是公开显示的，而且会随着您发布的任何内容一起显示，除非您选择隐藏您的公司名称。</strong>您可以随时更新您的 IBM 帐户。</p>
+<div><p class="dw-c-overlay-secure">所有提交的信息确保安全。</p></div>
+</div>
+</div>
+</div>
+</div>
+<div class="ibm-footer"></div>
+</div>
+<!-- Display name OVERLAY STARTS HERE -->
+<div class="ibm-common-overlay" id="displayname_overlay">
+<div class="ibm-head">
+<p><a class="ibm-common-overlay-close" href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#" onclick="dwsi.siInst.clearForm();">关闭 [x]</a></p>
+</div>
+<div class="ibm-body">
+<div class="ibm-main">
+<div class="ibm-title">
+<h2>选择您的昵称</h2><br><br>
+<div id="ibm-overlay-error-dname" class="no-display"></div>
+</div>
+<div class="ibm-container ibm-alternate ibm-buttons-last">
+<div class="ibm-container-body">
+<p class="ibm-overlay-intro">当您初次登录到 developerWorks 时，将会为您创建一份概要信息，您需要指定一个昵称。您的昵称将和您在 developerWorks 发布的内容显示在一起。</p><p><strong>昵称长度在 3 至 31 个字符之间</strong>。 
+    您的昵称在 developerWorks 社区中必须是唯一的，并且出于隐私保护的原因，不能是您的电子邮件地址。</p>
+<p class="ibm-overlay-intro">标有星（<span class="ibm-required">*</span>）号的字段是必填字段。</p> 
+<form id="dFormId" method="post" action="" name="dForm" onsubmit="return false;" class="ibm-column-form">
+<p><label for="displayname">昵称：<span class="ibm-required">*</span></label><span>
+    <input name="displayname" id="displayname" size="25" value="" type="text" onkeypress="dwsi.siInst.handleEP(event,this.form);" aria-required="true"></span>
+    <span class="ibm-form-note">(昵称长度在 3 至 31 个字符之间)</span>
+</p>
+<p>单击<strong>提交</strong>则表示您同意developerWorks 的条款和条件。 <a href="https://www.ibm.com/developerworks/community/terms?lang=zh">查看条款和条件</a>.</p>
+<div class="ibm-buttons-row">
+   <p><input class="ibm-btn-arrow-pri" name="ibm-submit" value="提交" onclick="dwsi.siInst.signin();return false;" type="submit"><span class="ibm-sep">&nbsp;</span>
+<input value="取消" type="button" name="ibm-cancel" class="ibm-btn-cancel-sec" onclick="dwsi.siInst.clearForm();ibmweb.overlay.hide(&#39;displayname_overlay&#39;);return false;"></p>
+</div>
+</form>
+<div class="ibm-overlay-rule"><hr></div>
+<div><p class="dw-c-overlay-secure">所有提交的信息确保安全。</p></div>
+</div>
+</div>
+</div>
+</div>
+<div class="ibm-footer"></div>
+</div>
+
+
+<!-- INLINE_COMMENTS_END -->
+
+</div>
+<!-- 6_4_COLUMN_END -->
+
+<!-- 6_2_COLUMN_BEGIN -->
+<div class="ibm-col-6-2">
+
+<!-- Next_Steps -->
+<!-- Dig_Deeper -->
+
+
+<!-- Promotion_Module -->
+    
+<!-- PROMOTION_MODULE_START -->
+<div class="ibm-alternate-rule"><hr></div>
+<ul class="ibm-portrait-module-list">
+<li><a class="" href="http://www.ibm.com/developerworks/cn/puresystems/" tabindex="-1" role="presentation"><img height="60" width="60" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/sm-f-cl-puresystems70.jpg" alt=""></a>
+<h3><a class="ibm-feature-link" href="http://www.ibm.com/developerworks/cn/puresystems/">IBM PureSystems</a></h3>
+<p>IBM PureSystems™ 系列解决方案是一个专家集成系统</p></li>
+<li><a class="" href="http://www.ibm.com/developerworks/cn/views/global/libraryview.jsp?type_by=Knowledge+paths" tabindex="-1" role="presentation"><img height="60" width="60" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/sm-f-knowledgepath50.jpg" alt=""></a>
+<h3><a class="ibm-feature-link" href="http://www.ibm.com/developerworks/cn/views/global/libraryview.jsp?type_by=Knowledge+paths">developerWorks 学习路线图</a></h3>
+<p>通过学习路线图系统掌握软件开发技能</p></li>
+<li><a class="" href="http://www.ibm.com/developerworks/cn/downloads/" tabindex="-1" role="presentation"><img height="60" width="60" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/sm-f-evaluationsoftware60.png" alt=""></a>
+<h3><a class="ibm-feature-link" href="http://www.ibm.com/developerworks/cn/downloads/">软件下载资源中心</a></h3>
+<p>软件下载、试用版及云计算</p></li>
+</ul>
+<!-- PROMOTION_MODULE_END -->
+
+</div>
+<!-- 6_2_COLUMN_END -->
+
+</div>
+<!-- SPLIT_COLUMNS_END -->
+
+<!-- BOTTOM_BACK_TO_TOP -->
+<div class="ibm-columns">
+<div class="ibm-col-1-1">
+	<div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p>
+</div>
+</div>
+
+<!-- Rating_Meta_BEGIN -->
+<!--Rating_Meta_BEGIN--><div class="metavalue">static.content.url=http://www.ibm.com/developerworks/js/artrating/</div><div class="metavalue">SITE_ID=10</div><div class="metavalue">Zone=Java technology</div><div class="metavalue">ArticleID=787660</div><div class="metavalue">ArticleTitle=Apache Thrift - 可伸缩的跨语言服务开发框架
+		</div><div class="metavalue">publish-date=01162012</div><script language="javascript" type="text/javascript">document.write('<div class="metavalue">url='+location.href.replace(/</g,  '%3C')+'</div>');</script><div class="metavalue">url=https://www.ibm.com/developerworks/cn/java/j-lo-apachethrift/</div><!--Rating_Meta_END-->
+<!-- Rating_Meta_END -->
+
+</div>
+<!-- END_IBM_CONTENT_MAIN -->
+
+</div>
+<!-- END_IBM_CONTENT_BODY -->
+
+</div>
+<!-- END_IBM_CONTENT -->
+
+</div></div>
+<!-- LEADSPACE_END -->
+
+
+<!-- END_IBM_PCON -->
+<!-- FOOTER_BEGIN -->
+<div id="ibm-footer" aria-label="页脚"><!-- IBM footer container; disabled --></div>
+
+<div id="ibm-footer-module-dwwrapper" role="contentinfo" aria-label="developerWorks Footer">
+
+<div id="ibm-footer-module-dw">
+	<div class="dw-footer-columns">
+		<div class="dw-footer-col-6-1 dw-footer-col-6-1-cn">
+			<ul>
+				<li><a href="https://www.ibm.com/developerworks/secure/feedback.jsp?domain=dwchina" tabindex="0">帮助</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/author/" tabindex="0">联系编辑</a></li>
+				<li><a href="https://www.ibm.com/developerworks/secure/myideas2.jsp?domain=dwchina&start=true" tabindex="0">提交内容</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/rss/" tabindex="0">订阅源</a></li>
+			</ul>
+        </div>
+		<div class="dw-footer-col-6-2">
+			<ul>
+				<li><a href="http://www.ibm.com/vrm/newsletter/10104?S_TACT=105AGX52&S_CMP=dwcntop" tabindex="0">在线浏览每周时事通讯</a></li>
+				<li><a class="dwcn-sina-link" href="http://weibo.com/ibmdw/" target="_blank" tabindex="0">新浪微博</a></li>
+				<li><a href="https://www.ibm.com/developerworks/community/report?lang=zh" tabindex="0">报告滥用</a></li>
+				<li><a href="https://www.ibm.com/developerworks/community/terms?lang=zh" tabindex="0">使用条款</a></li>
+				<li><a href="https://www.ibm.com/developerworks/cn/community/terms/thirdparty/" tabindex="0">第三方提示</a></li>
+			</ul>
+		</div>
+		<div class="dw-footer-col-6-3">
+			<ul>
+				<li><a href="http://www.ibm.com/privacy/cn/zh/" tabindex="0">隐私条约</a></li>
+				<li><a href="http://www.ibm.com/ibm/accessibility/cn/" tabindex="0">浏览辅助</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/academic/" tabindex="0">IBM 教育学院教育培养计划</a></li><li><a href="http://www.ibm.com/developerworks/cn/gep/">IBM 创业企业全球扶持计划</a></li><li><a href="http://www.ibm.com/partnerworld/isv/">ISV 资源 (英语)</a></li>
+			</ul>
+		</div>
+		<div class="dw-footer-col-6-4"> 
+			<ul>
+				<li><a href="https://www.ibm.com/developerworks/cn/newsletter/" tabindex="0">dW 中国每周时事通讯</a></li>
+			</ul>
+			
+		</div>
+		<div class="dw-footer-col-6-5">
+			<ul>
+				<li class="dw-footer-lang-head">选择语言：</li>
+				<li><a href="http://www.ibm.com/developerworks/" tabindex="0">English</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/" lang="zh" tabindex="0">中文</a></li>
+				<li><a href="http://www.ibm.com/developerworks/jp/" lang="ja" tabindex="0">日本語</a></li>
+				<li><a href="http://www.ibm.com/developerworks/ru/" lang="ru" tabindex="0">Русский</a></li>
+				<li><a href="http://www.ibm.com/developerworks/br/" lang="pt" tabindex="0">Português (Brasil)</a></li>
+				<li><a href="http://www.ibm.com/developerworks/ssa/" lang="es" tabindex="0">Español</a></li>
+				<li><a href="http://www.ibm.com/developerworks/vn/" lang="vi" tabindex="0">Việt</a></li>
+			</ul>
+		</div>
+		<div class="dw-footer-col-6-6">
+			<img width="223" height="46" alt="IBM®" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dwn-ibm-logo-v17.png">
+			<img class="dw-preload" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/ibm_sprite_social_blue_ON.png" alt="" width="0" height="0" style="display: none !important; visibility: hidden !important; opacity: 0 !important; background-position: 0px 0px;">
+		</div>
+	</div>
+</div>
+
+</div><!-- FOOTER_END -->
+
+<!-- END_IBM-TOP -->
+</div>
+
+<!-- SCRIPTS_INCLUDE_BEGIN -->
+<script type="text/javascript" src="./Apache Thrift - 可伸缩的跨语言服务开发框架_files/dw-comments.js">//</script>
+<script type="text/javascript" language="JavaScript">
+	dojo.ready(function(){
+		rBHash = typeof rBHash == "undefined" ? {} : rBHash;
+		rBHash['viperLang'] = 'zh';
+		rBHash['urlLang'] = 'cn';
+		rBHash['dwwi2Lang'] = 'zh_CN';
+		rBHash['appCode'] = 'dwmav';
+		rBHash['signoutUrl'] = (location.host.toLowerCase() === "www.ibm.com" || location.host.toLowerCase() === "developer.ibm.com") ? 'http://www.ibm.com/developerworks/cn/' : ''; 
+		dwsi.siInst = new dwweb.dynnav.dwsi();
+		dwsi.siInst.initSI();		
+
+		// construct the comment widget
+dwc.cmts = '条评论';
+dwc.signInPreText = '请';
+dwc.signIn = '登录';
+dwc.or = '或';
+dwc.register = '注册';
+dwc.signInPostText = '';
+dwc.leaveCmt = '后发表评论。';
+dwc.view = '查看';
+dwc.totalCmts = '共有评论';
+dwc.postYourCmt = '添加您的评论';
+dwc.show = '显示：';
+dwc.recentCmts = '最新评论';
+dwc.allCmts = '所有评论';
+dwc.tooLongCmt = '您的评论超过了 1000 字符限制';
+dwc.numCharsLeft = '剩余 <span id="charCount">{1}</span> 字符';
+dwc.reportAbuse = '报告滥用';
+dwc.notifyMsg = '有新评论时提醒我';
+dwc.htmlWarning = '注意：评论中不支持 HTML 语法'; 
+dwc.cmt = '评论：';
+dwc.addCmts = '添加评论';
+dwc.addCmt = '添加评论';
+dwc.doNotErase = '--在下方添加评论--'; 
+dwc.viewOrAddCmts = '查看或添加评论';
+dwc.reportInapprCont = '举报不良信息';
+dwc.reportInapprContLink = 'http://www.ibm.com/developerworks/forums/forum.jspa?forumID=1834';
+dwc.postingCmt = '正在发布评论……';
+dwc.noCmt = '快来添加第一条评论';
+dwc.netwkErr = '在检索评论时出错，请稍后刷新。';
+dwc.addACmt = '添加评论';
+dwc.instructCmt = '标有星号（<span class="ibm-required">*</span>）的是必填项目。';
+dwc.btnPost = '发布';
+dwc.btnPostAnon = '匿名发布';
+dwc.btnClrCmt = '清除评论';
+dwc.btnCancel = '取消';
+dwc.showRecent = '显示最新的 {1} 条评论'; // {1} is the count to be substituted
+dwc.showNext = '显示后 {1} 条评论'; // {1} is the count to be substituted
+dwc.showAllCmts = '显示所有评论';
+dwc.enterCmt = '请输入评论内容。';
+dwc.loginErr = '暂时无法验证您的登录状态，请稍后再试。';
+dwc.postErr = '暂时无法发布您的评论，请稍后再试。';
+dwc.postBy = '由 <strong>{1}</strong>  于 {2} '; // {1} is the author to be substituted; {2} is the date
+dwc.siteId = 10;
+dwc.lang = 'zh_CN';
+dwc.viperLang = 'zh';
+//dwc.abuseHref =  null;
+dwc.maxChars = 1000;
+dwc.cmtTxt =  '评论：';
+dwc.cmtsTxt =  '评论：';  
+		dwc && new dwc.comments('threadShow','95%',5,'nCmts','icomments');
+		});
+</script>
+
+
+
+<!-- BEGIN: Use this section to set page specific variables for the Unica Page Tag -->
+<script language="JavaScript">var NTPT_PGEXTRA="ibmSkillLevel=3&ibmCmaId=787660&ibmContentAreas=java";</script>
+<!--END --><!-- SCRIPTS_INCLUDE_END -->
+
+<div id="ibm-metrics">
+<script src="https://dw1.s81c.com/common/stats/stats.js" type="text/javascript">//</script>
+</div>
+
+
+
+<script id="hiddenlpsubmitdiv" style="display: none;"></script><script>try{for(var lastpass_iter=0; lastpass_iter < document.forms.length; lastpass_iter++){ var lastpass_f = document.forms[lastpass_iter]; if(typeof(lastpass_f.lpsubmitorig2)=="undefined"){ lastpass_f.lpsubmitorig2 = lastpass_f.submit; if (typeof(lastpass_f.lpsubmitorig2)=='object'){ continue;}lastpass_f.submit = function(){ var form=this; var customEvent = document.createEvent("Event"); customEvent.initEvent("lpCustomEvent", true, true); var d = document.getElementById("hiddenlpsubmitdiv"); if (d) {for(var i = 0; i < document.forms.length; i++){ if(document.forms[i]==form){ if (typeof(d.innerText) != 'undefined') { d.innerText=i; } else { d.textContent=i; } } } d.dispatchEvent(customEvent); }form.lpsubmitorig2(); } } }}catch(e){}</script></body></html>
